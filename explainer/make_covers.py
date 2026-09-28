@@ -38,6 +38,20 @@ FACE_OUTLINE = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 
                 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109]
 NOSE_TIP = 1
 
+# Per language: the title lines as (text, colour name, with motion echo), the fonts of the
+# title, the small lines, and what is added to the file names.
+WORDING = {
+    "en": {"title": [("PROJECTION", "white", False), ("MAPPING", "white", False),
+                     ("ON MOVING", "accent", True), ("OBJECTS", "accent", False)],
+           "title_fonts": TITLE_FONT_FILES, "line_height": 0.98,
+           "tag": "KINECT  +  PROJECTOR", "below": "the geometry, explained", "below_fonts": TEXT_FONT_FILES,
+           "suffix": ""},
+    "zh": {"title": [("移动物体上的", "accent", True), ("投影映射", "white", False)],
+           "title_fonts": CREDIT_FONT_FILES, "line_height": 1.22,
+           "tag": "KINECT  +  PROJECTOR", "below": "几何原理讲解  ·  Projection Mapping on Moving Objects",
+           "below_fonts": CREDIT_FONT_FILES, "suffix": "_zh"},
+}
+
 
 def font(file_names, size):
     for file_name in file_names:
@@ -202,13 +216,13 @@ def fitted_font(file_names, text, maximum_width, start_size):
     return font(file_names, size)
 
 
-def draw_title(image, left, top, maximum_width, start_size):
-    """Two blocks of heavy type, each as wide as the column; the second with motion echoes.
+def draw_title(image, left, top, maximum_width, start_size, wording):
+    """Blocks of heavy type, each as wide as the column; the line that moves has echoes.
     Returns the y below the last line."""
-    lines = [("PROJECTION", WHITE, False), ("MAPPING", WHITE, False),
-             ("ON MOVING", ACCENT_COLOUR, True), ("OBJECTS", ACCENT_COLOUR, False)]
-    size = min(fitted_font(TITLE_FONT_FILES, text, maximum_width, start_size).size for text, _, _ in lines)
-    title_font = font(TITLE_FONT_FILES, size)
+    colours = {"white": WHITE, "accent": ACCENT_COLOUR}
+    lines = [(text, colours[colour_name], with_echo) for text, colour_name, with_echo in wording["title"]]
+    size = min(fitted_font(wording["title_fonts"], text, maximum_width, start_size).size for text, _, _ in lines)
+    title_font = font(wording["title_fonts"], size)
     y = top
     for text, colour, with_echo in lines:
         box = title_font.getbbox(text)
@@ -223,11 +237,11 @@ def draw_title(image, left, top, maximum_width, start_size):
         shadow = max(4, size // 18)
         draw.text((left + shadow - box[0], y + shadow - box[1]), text, font=title_font, fill=(0, 0, 0, 200))
         draw.text((left - box[0], y - box[1]), text, font=title_font, fill=colour + (255,))
-        y += int(size * 0.98)
+        y += int(size * wording["line_height"])
     return y, size
 
 
-def make_cover(frame, landmarks, edges, orientation):
+def make_cover(frame, landmarks, edges, orientation, wording):
     if orientation == "horizontal":
         size = (1920, 1080)
         face_centre, face_height = (1420.0, 540.0), 800.0
@@ -261,14 +275,14 @@ def make_cover(frame, landmarks, edges, orientation):
 
     draw = ImageDraw.Draw(image)
     tag_font = font(TEXT_FONT_FILES, int(title_size * 0.24))
-    draw.text((text_left, text_top - int(title_size * 0.46)), "KINECT  +  PROJECTOR", font=tag_font, fill=MESH_COLOUR + (255,))
-    below, used_size = draw_title(image, text_left, text_top, text_width, title_size)
+    draw.text((text_left, text_top - int(title_size * 0.46)), wording["tag"], font=tag_font, fill=MESH_COLOUR + (255,))
+    below, used_size = draw_title(image, text_left, text_top, text_width, title_size, wording)
     draw = ImageDraw.Draw(image)
     bar_top = below + int(used_size * 0.14)
     draw.rectangle([text_left, bar_top, text_left + int(used_size * 1.7), bar_top + max(8, used_size // 16)],
                    fill=BEAM_COLOUR + (255,))
-    draw.text((text_left, bar_top + int(used_size * 0.22)), "the geometry, explained",
-              font=font(TEXT_FONT_FILES, int(used_size * 0.30)), fill=WHITE + (255,))
+    below_font = fitted_font(wording["below_fonts"], wording["below"], text_width, int(title_size * 0.30))
+    draw.text((text_left, bar_top + int(used_size * 0.22)), wording["below"], font=below_font, fill=WHITE + (255,))
     credit_font = font(CREDIT_FONT_FILES, int(title_size * 0.19))
     draw.text((text_left, height - int(title_size * 0.46)), "Richard Qian Li 陈腐粉碎机  ·  ITP, NYU", font=credit_font,
               fill=(200, 206, 222, 255))
@@ -279,6 +293,7 @@ def main():
     argument_parser = argparse.ArgumentParser()
     argument_parser.add_argument("--recording", type=str, default="kinect_20260927_165901.avi")
     argument_parser.add_argument("--seconds", type=float, default=27.0)
+    argument_parser.add_argument("--language", choices=sorted(WORDING), default="en")
     arguments = argument_parser.parse_args()
     frame = read_frame(arguments.recording, arguments.seconds)
     landmarks = find_landmarks(frame)
@@ -287,10 +302,11 @@ def main():
     edges = mesh_edges()
     os.makedirs(OUTPUT_DIRECTORY, exist_ok=True)
     for orientation in ("horizontal", "vertical"):
-        cover = make_cover(frame, landmarks, edges, orientation)
-        path = os.path.join(OUTPUT_DIRECTORY, f"cover_{orientation}.png")
+        wording = WORDING[arguments.language]
+        cover = make_cover(frame, landmarks, edges, orientation, wording)
+        path = os.path.join(OUTPUT_DIRECTORY, f"cover_{orientation}{wording['suffix']}.png")
         cover.save(path)
-        upload_path = os.path.join(OUTPUT_DIRECTORY, f"cover_{orientation}.jpg")      # YouTube takes at most 2 MB
+        upload_path = os.path.join(OUTPUT_DIRECTORY, f"cover_{orientation}{wording['suffix']}.jpg")      # YouTube takes at most 2 MB
         cover.save(upload_path, quality=92, optimize=True)
         print(f"{path}: {cover.size[0]} x {cover.size[1]}; {upload_path}: {os.path.getsize(upload_path) / 1e6:.2f} MB")
 

@@ -10,177 +10,203 @@ TEXT_FRAGMENTS   for texts assembled at run time: fragments replaced inside them
 
 NARRATION = [
     ("title",
-     "这是一段跟随人脸移动的投影。Kinect 深度相机负责观察，一台小型 Optoma 投影仪负责绘制。"
-     "这段视频讲解把两者联系起来的几何：相机的一个像素，怎样变成房间里的一个点；"
-     "这个点，又怎样变成投影仪的一个像素。"),
+     "这段视频讲的是：怎样把画面投到一张会动的脸上，并且让它一直贴在脸上。"
+     "一台 Kinect 深度相机负责看，一台小型的 Optoma 投影仪负责画。"
+     "关键在于两者之间的几何关系：相机画面里的一个像素，怎样对应到房间里的一个点；"
+     "这个点，又怎样对应到投影仪的一个像素。"),
 
     ("equipment",
-     "两件设备。Kinect 里有两个传感器。一个是彩色相机，分辨率 1920 乘 1080。"
-     "另一个是红外深度相机，分辨率 512 乘 424，它靠测量自身发出的光往返的时间来测距。"
-     "投影仪是一台小型 Optoma，分辨率 1920 乘 1080，作为第二块屏幕接在电脑上。"),
+     "先看设备，一共两台。Kinect 里面有两个镜头。"
+     "一个是普通的彩色相机，分辨率是 1920 乘 1080。"
+     "另一个是红外深度相机，分辨率是 512 乘 424。"
+     "它自己发出红外光，再测量光返回所用的时间，由此算出距离。"
+     "投影仪是一台小型的 Optoma，分辨率也是 1920 乘 1080，当作电脑的第二块屏幕来用。"),
 
     ("rig",
-     "这是从上方看到的装置。Kinect 位于原点。投影仪放在它的旁边。"
-     "两者之间的距离叫做基线，记作 b。人在前方，距离为 d，更远处是一面墙。"
-     "两台设备的视点永远不重合，所以相机里的一个像素，并不对应投影仪里的同一个像素。"
-     "它们唯一的共同基础，是房间本身。"),
+     "这是从正上方看下去的布置。深度相机放在原点，投影仪放在它旁边。"
+     "两者之间的距离叫基线，用字母 b 表示。"
+     "人站在前方，到深度相机的距离用 d 表示。再往后是一面墙。"
+     "相机和投影仪不在同一个位置，看东西的角度不同，"
+     "所以相机画面里的某个像素，并不等于投影仪画面里的同一个像素。"
+     "两者唯一共同的参照，就是这个房间本身。"),
 
     ("notation",
-     "这里涉及三幅图像，所以有三套像素坐标。"
-     "深度相机里是 x 和 y，每个像素还带有一个距离 d。"
-     "彩色相机里是 x 撇和 y 撇。"
-     "投影仪里是 x 两撇和 y 两撇。"
-     "在每一幅图像里，x 向右数列，y 向下数行。"
-     "房间只有一套坐标：大写的 X、Y、Z，单位是米，从彩色相机量起。"
-     "X 向右，Y 向上，Z 指向正前方。"),
+     "整个过程用到三幅画面，所以有三套像素坐标。"
+     "深度相机的画面里，坐标写作 x 和 y，每个像素还带着一个距离 d。"
+     "彩色相机的画面里，在字母右上角加一个小记号，和深度相机区分开。"
+     "投影仪的画面里，加两个小记号。"
+     "在每一幅画面里，x 表示从左往右的位置，y 表示从上往下的位置。"
+     "房间里只用一套坐标，写成大写的 X、Y、Z，单位是米，以彩色相机为原点。"
+     "大写 X 指向右边，大写 Y 指向上方，大写 Z 指向正前方。"),
 
     ("pixel_to_point",
-     "一个像素怎样变成一个点？一个像素代表一个方向：一条从镜头中心出发、穿过这个像素的射线。"
-     "焦距 f，是镜头中心到图像的距离，以像素为单位。"
-     "取像素所在的列 x 撇，减去图像中心。再除以 f，就得到这条射线的斜率。"
-     "乘以距离 Z，就得到横向位置，也就是大写的 X，单位是米。"
-     "行的算法相同，得到大写的 Y，只是多一个负号，因为行是向下数的，而 Y 指向上方。"
-     "所以，一个像素加上一个距离，就是房间里的一个点。"),
+     "一个像素怎么变成空间里的一个点？"
+     "每个像素其实代表一个方向：从镜头中心出发，穿过这个像素，射向远处的一条线。"
+     "先说焦距，用 f 表示。它是镜头中心到成像面的距离，这里用像素作单位。"
+     "拿像素的横坐标，减去画面中心的横坐标，再除以焦距 f，得到的就是这条线的斜率。"
+     "斜率再乘以距离，也就是大写的 Z，就得到这个点向右偏了多少米，这就是大写的 X。"
+     "纵向也是同样的算法，得到大写的 Y。"
+     "只是要加一个负号，因为画面里的 y 是往下增大的，而空间里的 Y 是向上的。"
+     "所以，一个像素，加上一个距离，就确定了房间里的一个点。"),
 
     ("association",
-     "但是，距离是由另一个镜头测得的，它在旁边五厘米处。"
-     "深度像素怎样找到它对应的彩色像素？"
-     "第一步，把深度像素 x、y 连同它的距离 d，用深度相机自己的焦距，抬升为房间里的一个点。"
-     "第二步，把这个点平移两个镜头之间的偏移量，这个偏移量在出厂时已经测定。"
-     "第三步，把这个点投影到彩色相机里，得到看见同一位置的彩色像素 x 撇、y 撇。"
-     "两幅图像之间的错位取决于距离：近处的物体错位大，远处的错位小。"
-     "对每一个深度像素都这样做，每个彩色像素就有了自己的距离。"),
+     "不过这里有个问题：距离是另一个镜头测出来的，两个镜头相隔五厘米。"
+     "那么深度相机的某个像素，对应彩色相机的哪个像素呢？分三步。"
+     "第一步，用深度相机自己的焦距，把深度像素和它的距离，换算成房间里的一个点。"
+     "第二步，两个镜头之间的相对位置，出厂时已经精确测好，按这个数值把点挪过去。"
+     "第三步，把这个点投影到彩色相机的画面上，就找到了看着同一个位置的那个彩色像素。"
+     "要注意，两幅画面错开多少，和距离有关：近的东西错开得多，远的东西错开得少。"
+     "对每个深度像素都这样算一遍，每个彩色像素就都有了自己的距离。"),
 
     ("cloud",
-     "结果是：每一个有距离的彩色像素，都对应一个点 X、Y、Z。"
-     "这是装置采集到的真实数据。房间的深度点云，青色的是 Kinect，"
-     "品红色的是投影仪，画在标定算出的位置上。"),
+     "这样一来，每个带有距离的彩色像素，都对应房间里的一个点。"
+     "下面是这套装置实际采集到的数据。这是房间的三维点云。"
+     "青色的框是深度相机，品红色的框是投影仪，它的位置是标定算出来的。"),
 
     ("projector",
-     "再看投影仪。它是一台反向工作的相机：相机让光进来的地方，投影仪让光出去。"
-     "所以可以用同样的方式描述它。一个焦距，一个图像中心，还有一个位姿："
-     "旋转 R 和平移 t，说明它相对 Kinect 的位置和朝向。"
-     "取房间里的一个点。通过旋转和平移，把它变换到投影仪自己的坐标系里。"
-     "除以它的距离，乘以焦距，再加上图像中心。"
-     "结果就是 x 两撇、y 两撇：照亮这个点的投影仪像素。"),
+     "再来看投影仪。可以把它看成一台倒过来用的相机："
+     "相机是让光进来，投影仪是让光出去，光走的路线是一样的。"
+     "所以描述相机的那几个参数，对投影仪同样适用。"
+     "一个是焦距，一个是画面中心，还有它在空间里的位置和方向。"
+     "位置和方向用旋转 R 和平移 t 来表示，说的是它相对于深度相机摆在哪里、对着哪边。"
+     "具体怎么算呢？取房间里的一个点。先经过旋转和平移，换到投影仪自己的坐标系里。"
+     "然后除以它到投影仪的距离，乘以焦距，再加上画面中心。"
+     "算出来的，就是能照亮这个点的那个投影仪像素。"),
 
     ("coded_dots",
-     "要求出位姿，投影仪必须告诉我们它的像素落在哪里。"
-     "它画出一个点阵，每个点都在已知的像素 x 两撇、y 两撇上。"
-     "在连续的若干帧里，每个点按自己的二进制编码闪烁。"
-     "相机在 x 撇、y 撇处看到一个点时，编码就说明它来自哪个投影仪像素。"
-     "而深度给出了这个点在房间里的位置。"
-     "所以每个点就是一对数据：一个点 X、Y、Z，以及照亮它的投影仪像素。"),
+     "那么，投影仪的位置和方向怎么测出来？"
+     "办法是让投影仪自己告诉我们，它的每个像素落在了哪里。"
+     "投影仪先投出一片整齐的光点，每个光点在投影仪画面里的坐标都是已知的。"
+     "接下来的十几帧里，每个光点按照自己的编号一亮一灭，就像在发一串二进制密码。"
+     "相机拍到某个光点以后，根据它亮灭的顺序，就能认出它是投影仪的哪一个像素。"
+     "同时，深度相机也测出了这个光点在房间里的位置。"
+     "于是，每个光点都给出一对数据：房间里的一个点，和照亮它的那个投影仪像素。"),
 
     ("solve",
-     "这个模型有七个未知数。旋转三个，平移三个，再加上焦距。"
-     "每一对数据给出两个方程：一个关于 x 两撇，一个关于 y 两撇。"
-     "几百对数据远远超过所需，所以拟合要找的，是让模型算出的点最接近投影仪实际画出的点的那组数值，"
-     "并且忽略解码错误的点。"
-     "写成一个矩阵，投影仪就是 K 乘以 R、t：三行四列，把房间里的点变成像素。"),
+     "投影仪的模型里，一共有七个未知的参数。旋转占三个，平移占三个，焦距占一个。"
+     "每一对数据可以列出两个方程，横坐标一个，纵坐标一个。"
+     "几百对数据，远远多于七个参数所需要的。"
+     "所以计算的目标，是找出这样一组参数："
+     "让模型算出来的光点，和投影仪实际投出的光点，尽可能接近。"
+     "个别认错了的光点，会被自动剔除。"
+     "最后可以把结果写成一个矩阵：内参矩阵 K，乘以旋转和平移。"
+     "这是一个三乘四的矩阵，它把房间里的点直接变成投影仪的像素。"),
 
     ("focal",
-     "焦距为什么重要？它决定放大倍率。"
-     "一个大小为 s 的物体，在距离 D 处，占据 f 乘以 s 再除以 D 个像素。"
-     "一张十五厘米宽的脸，离投影仪九十厘米，大约占三百七十个像素。"
-     "如果模型里的焦距不对，投在脸上的图像大小就不对。"),
+     "焦距为什么这么重要？因为它决定了画面的放大倍数。"
+     "一个宽度为 s 的物体，放在距离 D 的地方，在画面上占多少像素？"
+     "答案是焦距乘以宽度，再除以距离。"
+     "举个例子：一张十五厘米宽的脸，离投影仪九十厘米，大约占三百七十个像素。"
+     "如果模型里的焦距不准，投到脸上的图案，大小就会跟着出错。"),
 
     ("ambiguity",
-     "这里还有一个陷阱。如果所有的点都落在墙上，拟合就分不清两种情况："
-     "焦距短而投影仪离得近，还是焦距长而投影仪离得远。两者在墙上画出的点完全一样。"
-     "只有在近处的物体上，它们才不一致。"
-     "所以扫描时需要有点落在近处的物体上，比如坐在光束里的人，这些点才能确定焦距。"),
+     "这里藏着一个陷阱。如果所有光点都打在同一面墙上，计算就分不清下面两种情况："
+     "是焦距比较小、投影仪离墙比较近，还是焦距比较大、投影仪离墙比较远。"
+     "这两种情况在墙上投出的光点，位置完全相同。"
+     "只有在离得近的物体上，两者才会显出差别。"
+     "所以标定的时候，画面里一定要有近处的物体，让一部分光点落在上面。"
+     "有了这些近处的光点，焦距才能定下来。"),
 
     ("face",
-     "现在来看移动的目标。在相机的每一帧里，MediaPipe 在脸上找到 468 个特征点，以彩色像素 x 撇、y 撇表示。"
-     "这就是形状。Kinect 补上距离，特征点处的深度决定了起伏的深浅。"
-     "于是每个特征点都变成一个点 X、Y、Z。"
-     "每个点再经过投影仪模型，就得到投影仪应该画出的网格。"
-     "背向投影仪的三角形不画。"),
+     "现在轮到会动的目标：人脸。"
+     "相机每拍一帧，MediaPipe 这个人脸识别模型，就在脸上找出 468 个特征点，"
+     "给出它们在彩色画面里的坐标。这些点描出了脸的形状。"
+     "深度相机再补上距离，并且根据特征点上的深度，确定脸部起伏的深浅。"
+     "这样，每个特征点都变成了房间里的一个点。"
+     "把这些点逐个送进投影仪的模型，就得到投影仪应该画出的网格。"
+     "其中背对着投影仪的三角形，就不画了。"),
 
     ("texture",
-     "一幅平面的画，怎样贴到弯曲的脸上？"
-     "网格上的每一个点，都有第二个地址：在一张平面的方形图像，也就是贴图上，有一个固定的位置。"
-     "这种布局叫做 UV 映射。它就是展开的脸。"
-     "在 Blender 里，颜料画在网格上，落在这个方形里。"
-     "运行时，三角形还是同样的那些。方形里的每个三角形，被拉伸到实时网格上对应的三角形上，"
-     "画进投影仪的图像里。移动的只是顶点，颜料跟着走。"),
+     "一张平面的图，怎么贴到凹凸不平的脸上？"
+     "秘密在于，网格上的每个点都有两个地址。"
+     "一个是它在脸上的位置，另一个是它在一张正方形平面图上的位置。"
+     "这张平面图就是贴图，这种对应方式叫 UV 映射。可以把它想成一张摊平了的脸。"
+     "在 Blender 里，把颜色画在网格上，颜色实际上就落在这张正方形的图里。"
+     "运行的时候，三角形还是原来那些三角形。"
+     "贴图上的每个三角形，都被拉伸到实时网格上对应的那个三角形上，然后画进投影仪的画面。"
+     "变的只是三个顶点的位置，颜色跟着三角形一起走。"),
 
     ("error",
-     "误差从哪里来？主要来自深度，并且通过基线放大。"
-     "假设测得的距离偏大了德尔塔 Z。系统就会以为这个点在相机射线上更远的地方。"
-     "它让投影仪瞄准这个它以为的点。但是光在到达那里之前，就被真实的表面挡住了。"
-     "光落在真实点的旁边。横向偏移大约是德尔塔 Z 乘以基线 b，再除以距离 d。"
-     "投影仪离开七十厘米时，一厘米的深度误差会让图像偏移九毫米。"
-     "把投影仪移到 Kinect 旁边，同样的误差只造成大约一毫米的偏移。"),
+     "误差是从哪里来的？主要来自深度测量，而且会被基线放大。"
+     "假设测出来的距离比实际远了一点，这个差值记作德尔塔 Z。"
+     "系统就会以为，这个点在相机视线上更靠后的位置。"
+     "于是它让投影仪对准这个它以为的位置。"
+     "可是光还没走到那里，就先被真实的脸挡住了。结果，光落在了真实位置的旁边。"
+     "偏了多少呢？大约是德尔塔 Z 乘以基线 b，再除以距离 d。"
+     "当投影仪离深度相机七十厘米时，一厘米的深度误差，会让图案偏九毫米。"
+     "如果把投影仪挪到深度相机旁边，同样的误差，只会偏一毫米左右。"),
 
     ("loop",
-     "合在一起，这是一个围绕移动物体的反馈回路。"
-     "脸在移动。彩色相机拍下它。MediaPipe 找到特征点：这就是目标。"
-     "深度相机给每个特征点加上距离，让它成为房间里的一个点。"
-     "投影仪模型把这个点变成投影仪像素，光就落在脸上。"
-     "然后脸又动了，回路再跑一遍，每秒十五次。"
-     "跑一遍需要零点几秒，所以系统瞄准的，是光到达时脸将会在的位置。"),
+     "把这些环节连起来，就是一个围绕运动物体的反馈回路。"
+     "脸动了。彩色相机拍下一帧。MediaPipe 找出特征点，这就是要追踪的目标。"
+     "深度相机给每个特征点配上距离，它就成了房间里的一个点。"
+     "投影仪模型再把这个点换算成投影仪的像素，光就打到了脸上。"
+     "接着脸又动了，整个过程再来一遍，每秒钟十五次。"
+     "不过走完一遍需要零点几秒，所以系统要提前预判："
+     "它对准的不是脸现在的位置，而是光到达的那一刻，脸将要到的位置。"),
 
     ("closing",
-     "相机像素，到房间里的点，到投影仪像素，再回到脸上。"),
+     "从相机的像素，到房间里的点，再到投影仪的像素，最后回到脸上。"),
 ]
 
+# Names that the Chinese voice reads badly: they are spoken by the same voice in its English mode.
+ENGLISH_NAMES = ["Kinect", "Optoma", "MediaPipe", "Blender"]
+
 CUES = {
-    "title": {"A Kinect depth camera": "Kinect 深度相机", "A small Optoma": "一台小型 Optoma",
-              "how a camera pixel": "相机的一个像素", "and how that point": "这个点，又怎样"},
-    "equipment": {"A colour camera": "一个是彩色相机", "infrared depth camera": "红外深度相机",
+    "title": {"A Kinect depth camera": "一台 Kinect 深度相机", "A small Optoma": "一台小型的 Optoma",
+              "how a camera pixel": "相机画面里的一个像素", "and how that point": "这个点，又怎样"},
+    "equipment": {"A colour camera": "一个是普通的彩色相机", "infrared depth camera": "另一个是红外深度相机",
                   "The projector is": "投影仪是一台"},
-    "rig": {"Kinect sits": "Kinect 位于原点", "projector stands": "投影仪放在", "baseline": "叫做基线",
-            "person is at": "人在前方", "wall is further": "更远处是一面墙", "never share": "视点永远不重合",
-            "only common ground": "唯一的共同基础"},
-    "notation": {"x and y in the depth": "深度相机里是", "x prime and y prime": "彩色相机里是",
-                 "x double prime": "投影仪里是", "x counts columns": "向右数列", "y counts rows": "向下数行",
-                 "room has one set": "房间只有一套坐标", "X to the right": "X 向右，Y 向上", "Y up": "Y 向上，Z",
-                 "Z straight ahead": "Z 指向正前方"},
-    "pixel_to_point": {"pixel names a direction": "一个像素代表一个方向", "focal length, f": "焦距 f",
-                       "subtract the image centre": "减去图像中心", "Divide by f": "再除以 f",
-                       "Multiply by the distance": "乘以距离 Z", "rows work the same": "行的算法相同",
-                       "with a minus sign": "多一个负号", "pixel plus a distance": "一个像素加上一个距离"},
+    "rig": {"Kinect sits": "深度相机放在原点", "projector stands": "投影仪放在它旁边", "baseline": "叫基线",
+            "person is at": "人站在前方", "wall is further": "再往后是一面墙", "never share": "不在同一个位置",
+            "only common ground": "唯一共同的参照"},
+    "notation": {"x and y in the depth": "深度相机的画面里", "x prime and y prime": "彩色相机的画面里",
+                 "x double prime": "投影仪的画面里", "x counts columns": "从左往右的位置",
+                 "y counts rows": "从上往下的位置", "room has one set": "房间里只用一套坐标",
+                 "X to the right": "大写 X 指向右边", "Y up": "大写 Y 指向上方", "Z straight ahead": "大写 Z 指向正前方"},
+    "pixel_to_point": {"pixel names a direction": "每个像素其实代表一个方向", "focal length, f": "先说焦距",
+                       "subtract the image centre": "减去画面中心", "Divide by f": "再除以焦距",
+                       "Multiply by the distance": "再乘以距离", "rows work the same": "纵向也是同样的算法",
+                       "with a minus sign": "加一个负号", "pixel plus a distance": "加上一个距离"},
     "association": {"other lens": "另一个镜头", "First, the depth pixel": "第一步",
                     "Second, the point is shifted": "第二步", "Third, the point is projected": "第三步",
-                    "depends on distance": "错位取决于距离", "Done for every depth pixel": "对每一个深度像素"},
-    "cloud": {"depth cloud of the room": "房间的深度点云", "Kinect in cyan": "青色的是 Kinect",
-              "projector in magenta": "品红色的是投影仪"},
-    "projector": {"camera running backwards": "反向工作的相机", "A focal length": "一个焦距",
-                  "an image centre": "一个图像中心", "and a pose": "还有一个位姿",
-                  "Rotate and translate": "通过旋转和平移", "Divide by its distance": "除以它的距离",
-                  "The result is": "结果就是"},
-    "coded_dots": {"grid of dots": "画出一个点阵", "known pixel": "已知的像素",
-                   "blinks its own binary code": "二进制编码闪烁", "camera sees a dot": "看到一个点时",
-                   "the code says": "编码就说明", "depth gives": "而深度给出了",
-                   "each dot is one pair": "每个点就是一对数据"},
-    "solve": {"seven unknowns": "七个未知数", "Each pair gives two equations": "给出两个方程",
-              "A few hundred pairs": "几百对数据", "the fit looks for": "拟合要找的",
-              "ignores dots": "忽略解码错误", "Written as one matrix": "写成一个矩阵"},
-    "focal": {"sets the magnification": "决定放大倍率", "An object of size s": "一个大小为 s 的物体",
-              "covers f times s": "占据 f 乘以 s", "A face fifteen centimetres": "一张十五厘米宽的脸",
-              "If the model's focal length": "如果模型里的焦距"},
-    "ambiguity": {"every dot lands on the wall": "所有的点都落在墙上", "short focal length": "焦距短而",
-                  "from a long one": "还是焦距长", "Both draw the same": "两者在墙上画出的点",
-                  "only disagree on a near object": "只有在近处的物体上", "those dots pin": "这些点才能确定焦距"},
-    "face": {"MediaPipe finds": "MediaPipe 在脸上找到", "Kinect adds the distance": "Kinect 补上距离",
-             "depth at the landmarks": "特征点处的深度", "each landmark becomes": "每个特征点都变成",
-             "goes through the projector model": "经过投影仪模型", "That gives the mesh": "投影仪应该画出的网格",
-             "face away from the projector": "背向投影仪的三角形"},
-    "texture": {"second address": "第二个地址", "That layout is the U V map": "这种布局叫做",
-                "the face, unfolded": "展开的脸", "At run time": "运行时",
-                "Each triangle of the square": "方形里的每个三角形", "Only the corners move": "移动的只是顶点"},
-    "error": {"Mostly from depth": "主要来自深度", "Suppose the measured distance": "假设测得的距离",
-              "further along the camera's ray": "相机射线上更远的地方", "aims the projector": "让投影仪瞄准",
-              "the light stops": "但是光在到达那里之前", "It lands beside": "光落在真实点的旁边",
-              "The sideways shift": "横向偏移大约是", "With the projector seventy": "投影仪离开七十厘米",
-              "Slide the projector": "把投影仪移到"},
-    "loop": {"The face moves": "脸在移动", "colour camera captures": "彩色相机拍下它",
-             "MediaPipe finds": "MediaPipe 找到特征点", "attaches a distance": "加上距离",
-             "projector model turns": "投影仪模型把这个点", "light lands on the face": "光就落在脸上",
-             "the face moves again": "然后脸又动了", "fifteen times a second": "每秒十五次",
-             "One pass takes": "跑一遍需要"},
+                    "depends on distance": "和距离有关", "Done for every depth pixel": "对每个深度像素"},
+    "cloud": {"depth cloud of the room": "房间的三维点云", "Kinect in cyan": "青色的框是",
+              "projector in magenta": "品红色的框是"},
+    "projector": {"camera running backwards": "倒过来用的相机", "A focal length": "一个是焦距",
+                  "an image centre": "一个是画面中心", "and a pose": "还有它在空间里",
+                  "Rotate and translate": "先经过旋转和平移", "Divide by its distance": "然后除以它到投影仪的距离",
+                  "The result is": "算出来的"},
+    "coded_dots": {"grid of dots": "一片整齐的光点", "known pixel": "都是已知的",
+                   "blinks its own binary code": "一亮一灭", "camera sees a dot": "相机拍到某个光点",
+                   "the code says": "就能认出", "depth gives": "深度相机也测出了",
+                   "each dot is one pair": "都给出一对数据"},
+    "solve": {"seven unknowns": "七个未知的参数", "Each pair gives two equations": "可以列出两个方程",
+              "A few hundred pairs": "几百对数据", "the fit looks for": "所以计算的目标",
+              "ignores dots": "个别认错了的光点", "Written as one matrix": "写成一个矩阵"},
+    "focal": {"sets the magnification": "放大倍数", "An object of size s": "一个宽度为 s 的物体",
+              "covers f times s": "焦距乘以宽度", "A face fifteen centimetres": "一张十五厘米宽的脸",
+              "If the model's focal length": "如果模型里的焦距不准"},
+    "ambiguity": {"every dot lands on the wall": "如果所有光点都打在同一面墙上", "short focal length": "是焦距比较小",
+                  "from a long one": "还是焦距比较大", "Both draw the same": "这两种情况在墙上投出的光点",
+                  "only disagree on a near object": "只有在离得近的物体上", "those dots pin": "有了这些近处的光点"},
+    "face": {"MediaPipe finds": "MediaPipe 这个人脸识别模型", "Kinect adds the distance": "深度相机再补上距离",
+             "depth at the landmarks": "根据特征点上的深度", "each landmark becomes": "每个特征点都变成了",
+             "goes through the projector model": "送进投影仪的模型", "That gives the mesh": "投影仪应该画出的网格",
+             "face away from the projector": "背对着投影仪的三角形"},
+    "texture": {"second address": "都有两个地址", "That layout is the U V map": "这种对应方式叫",
+                "the face, unfolded": "摊平了的脸", "At run time": "运行的时候",
+                "Each triangle of the square": "贴图上的每个三角形", "Only the corners move": "变的只是三个顶点"},
+    "error": {"Mostly from depth": "主要来自深度测量", "Suppose the measured distance": "假设测出来的距离",
+              "further along the camera's ray": "更靠后的位置", "aims the projector": "让投影仪对准",
+              "the light stops": "可是光还没走到那里", "It lands beside": "光落在了真实位置的旁边",
+              "The sideways shift": "偏了多少呢", "With the projector seventy": "当投影仪离深度相机七十厘米",
+              "Slide the projector": "如果把投影仪挪到"},
+    "loop": {"The face moves": "脸动了", "colour camera captures": "彩色相机拍下一帧",
+             "MediaPipe finds": "MediaPipe 找出特征点", "attaches a distance": "配上距离",
+             "projector model turns": "投影仪模型再把这个点", "light lands on the face": "光就打到了脸上",
+             "the face moves again": "接着脸又动了", "fifteen times a second": "每秒钟十五次",
+             "One pass takes": "走完一遍需要"},
     "closing": {},
 }
 
@@ -255,7 +281,7 @@ TEXTS = {
     "projector frame": "投影仪坐标系",
     "focal length f": "焦距 f (focal length)",
     "image centre (cx, cy)": "图像中心 (cx, cy)",
-    "pose: rotation R, translation t": "位姿 (pose)：旋转 R，平移 t",
+    "pose: rotation R, translation t": "位置和方向 (pose)：旋转 R，平移 t",
     # coded dots
     "Calibration: the projector shows where its pixels land": "标定 (calibration)：投影仪显示它的像素落在哪里",
     "this dot, frame by frame: its code": "这个点逐帧的亮灭：它的编码",

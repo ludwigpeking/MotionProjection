@@ -7,3 +7,5 @@ comtypes>=1.4          # Kinect v2 through the Microsoft SDK (optional path)
 pykinect2==0.1.0       # then run patch_pykinect2.py (optional path)
 manim>=0.19            # explainer film
 edge-tts>=7            # explainer narration, fallback voice
+faster-whisper>=1.2   # explainer: listening check of the narration
+pypinyin>=0.50        # explainer: listening check of the narration

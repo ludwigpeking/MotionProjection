@@ -130,6 +130,7 @@
         <button id="run-kinect-view">Kinect view</button>
         <button class="primary" id="run-calibrate-dense" title="Static scene with objects near and far, nobody in it: fits focal length, lens centre, distortion and pose">Full calibration</button>
         <button id="run-pointer-grid" title="Static scene: projects discs at points across the scene and measures where they land">Landing test</button>
+        <button id="run-latency-split" title="Flashes the projector and a window on this screen together, to separate the projector's delay from the camera's. The Kinect must see both.">Latency test</button>
         <button id="run-calibrate" title="Coded dots, with a person in the beam: pose, and focal length when near dots exist">Quick calibration</button>
         <button class="primary" id="run-red-dot">Start nose dot</button>
         <button class="primary" id="run-face-mesh">Face mesh</button>
@@ -346,6 +347,7 @@
   document.getElementById("run-calibrate").onclick = function () { post("/api/run?job=calibrate"); };
   document.getElementById("run-calibrate-dense").onclick = function () { post("/api/run?job=calibrate_dense"); };
   document.getElementById("run-pointer-grid").onclick = function () { post("/api/run?job=pointer_grid"); };
+  document.getElementById("run-latency-split").onclick = function () { post("/api/run?job=latency_split"); };
   document.getElementById("run-red-dot").onclick = function () { post("/api/run?job=red_dot"); };
   document.getElementById("run-pointer").onclick = function () { post("/api/run?job=pointer"); };
   document.getElementById("stop").onclick = function () { post("/api/stop"); };

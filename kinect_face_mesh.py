@@ -293,31 +293,34 @@ def main():
             if len(render_times) > 60:
                 render_times.pop(0)
 
-            if layer == "depth" and depth_entry_for_view(camera, timestamp) is not None:
-                view = depth_image(depth_entry_for_view(camera, timestamp)[1][::2, ::2])
-            else:
-                view = cv2.resize(frame, (960, 540), interpolation=cv2.INTER_AREA)
-            if layer == "mesh" and smoothed is not None and triangles is not None:
-                scaled = (smoothed / 2.0).astype(numpy.int32)
-                for triangle in triangles[::3]:
-                    cv2.polylines(view, [scaled[triangle].reshape(-1, 1, 2)], True, (0, 200, 0), 1)
-            band = view[0:56, :]
-            band[:] = (band * 0.35).astype(numpy.uint8)
-            cv2.putText(view, f"Kinect {camera.frames_per_second():.0f} fps, render {numpy.mean(render_times) * 1000:.0f} ms, "
-                              f"mode {mode}, lead {lead_seconds * 1000:.0f} ms {'on' if predict else 'OFF'}, "
-                              f"prediction gain {face_tracker.last_prediction_gain:.2f}", (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
-                        (255, 255, 255), 2)
-            relief_text = (f", relief x{relief_estimator.scale:.2f} from {relief_estimator.fitted_landmark_count}"
-                           if relief_estimator.scale is not None else ", relief x1.00 (not measured)")
-            cv2.putText(view, (f"face distance {depth_smoother.depth:.2f} m from {valid_count} landmarks with depth{relief_text}"
-                               if depth_smoother.depth is not None else "face distance: not measured yet")
-                              + (f"   {warning}" if warning else ""),
-                        (10, 48), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255) if not warning else (0, 0, 255), 2)
-            if recorder.active:
-                cv2.putText(view, recorder.status_text(), (760, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-            if show_window:
-                cv2.imshow(DEBUG_WINDOW_NAME, view)
-            panel.publish(view)
+            # The debug view is only built when it will be shown or published: resizing the frame
+            # and drawing the mesh on it costs several milliseconds that the projection does not need.
+            if show_window or panel.view_due():
+                if layer == "depth" and depth_entry_for_view(camera, timestamp) is not None:
+                    view = depth_image(depth_entry_for_view(camera, timestamp)[1][::2, ::2])
+                else:
+                    view = cv2.resize(frame, (960, 540), interpolation=cv2.INTER_AREA)
+                if layer == "mesh" and smoothed is not None and triangles is not None:
+                    scaled = (smoothed / 2.0).astype(numpy.int32)
+                    for triangle in triangles[::3]:
+                        cv2.polylines(view, [scaled[triangle].reshape(-1, 1, 2)], True, (0, 200, 0), 1)
+                band = view[0:56, :]
+                band[:] = (band * 0.35).astype(numpy.uint8)
+                cv2.putText(view, f"Kinect {camera.frames_per_second():.0f} fps, render {numpy.mean(render_times) * 1000:.0f} ms, "
+                                  f"mode {mode}, lead {lead_seconds * 1000:.0f} ms {'on' if predict else 'OFF'}, "
+                                  f"prediction gain {face_tracker.last_prediction_gain:.2f}", (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+                            (255, 255, 255), 2)
+                relief_text = (f", relief x{relief_estimator.scale:.2f} from {relief_estimator.fitted_landmark_count}"
+                               if relief_estimator.scale is not None else ", relief x1.00 (not measured)")
+                cv2.putText(view, (f"face distance {depth_smoother.depth:.2f} m from {valid_count} landmarks with depth{relief_text}"
+                                   if depth_smoother.depth is not None else "face distance: not measured yet")
+                                  + (f"   {warning}" if warning else ""),
+                            (10, 48), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255) if not warning else (0, 0, 255), 2)
+                if recorder.active:
+                    cv2.putText(view, recorder.status_text(), (760, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                if show_window:
+                    cv2.imshow(DEBUG_WINDOW_NAME, view)
+                panel.publish(view)
             if panel.projector_view_due():
                 projector_view = cv2.resize(projector_image, (960, 540), interpolation=cv2.INTER_AREA)
                 cv2.putText(projector_view, "projector image", (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)

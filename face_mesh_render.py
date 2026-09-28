@@ -14,6 +14,8 @@ puts the photo of the face back onto the face if P is right.
 import cv2
 import numpy
 
+import config
+
 
 def _normalise(points):
     """Similarity normalisation for a well-conditioned DLT: returns (normalised, transform)."""
@@ -157,11 +159,17 @@ def front_facing(landmarks_3d, triangles, viewpoint, front_sign=CANONICAL_FRONT_
 
 
 def render_face_mesh(texture_bgr, texture_landmarks_2d, landmarks_3d, projection, triangles, width, height,
-                     brightness_scale=1.0, viewpoint=None):
+                     brightness_scale=1.0, viewpoint=None, render_scale=None):
     """Warp the face texture to where P puts the mesh, in one vectorised pass:
-    rasterise triangle ids, barycentric coordinates for every covered projector
-    pixel, then a single remap. Returns a BGR projector image. With a viewpoint (the
-    projector's position) triangles facing away from it are not drawn."""
+    rasterise triangle ids, the texture position of every covered projector pixel, then
+    a single remap. Returns a BGR projector image. With a viewpoint (the projector's
+    position) triangles facing away from it are not drawn.
+
+    render_scale below 1 draws the mesh that much smaller and enlarges the result: the
+    work falls with the square of the scale, and on a face, where a projector pixel is
+    well under a millimetre, the difference does not show."""
+    if render_scale is None:
+        render_scale = getattr(config, "face_mesh_render_scale", 1.0)
     projected = project_points(projection, landmarks_3d)
     if not numpy.all(numpy.isfinite(projected)):
         return numpy.zeros((height, width, 3), dtype=numpy.uint8)
@@ -187,34 +195,44 @@ def render_face_mesh(texture_bgr, texture_landmarks_2d, landmarks_3d, projection
     if box_right <= box_left or box_bottom <= box_top:
         return output
     box_width, box_height = box_right - box_left, box_bottom - box_top
+    drawn_width = max(1, int(round(box_width * render_scale)))
+    drawn_height = max(1, int(round(box_height * render_scale)))
+    scale_x = drawn_width / float(box_width)
+    scale_y = drawn_height / float(box_height)
 
-    # Triangle id per projector pixel (-1 = not covered).
-    id_image = numpy.full((box_height, box_width), -1, dtype=numpy.int32)
-    offset = numpy.array([box_left, box_top], dtype=numpy.float32)
-    for index in numpy.nonzero(usable)[0]:
-        cv2.fillConvexPoly(id_image, numpy.round(destination_corners[index] - offset).astype(numpy.int32), int(index))
-    rows, columns = numpy.nonzero(id_image >= 0)
-    if len(rows) == 0:
+    # The triangles in the coordinates of the (possibly smaller) drawing.
+    drawn_corners = (destination_corners - numpy.array([box_left, box_top], dtype=numpy.float32)) \
+        * numpy.array([scale_x, scale_y], dtype=numpy.float32)
+    rounded_corners = numpy.round(drawn_corners).astype(numpy.int32)
+
+    # Triangle id per pixel of the drawing (-1 = not covered).
+    id_image = numpy.full((drawn_height, drawn_width), -1, dtype=numpy.int32)
+    for index in numpy.flatnonzero(usable):
+        cv2.fillConvexPoly(id_image, rounded_corners[index], int(index))
+    covered = id_image >= 0
+    if not covered.any():
         return output
-    triangle_ids = id_image[rows, columns]
 
-    # Per-triangle inverse affine (destination -> source), vectorised: [D 1] . A^T = S.
+    # Per-triangle affine map from drawing coordinates to texture coordinates: [D 1] . A = S.
     ones = numpy.ones((len(triangles), 3, 1), dtype=numpy.float32)
-    destination_homogeneous = numpy.concatenate([destination_corners, ones], axis=2)     # (T, 3, 3)
-    determinants = numpy.linalg.det(destination_homogeneous)
+    drawn_homogeneous = numpy.concatenate([drawn_corners, ones], axis=2)                 # (T, 3, 3)
+    determinants = numpy.linalg.det(drawn_homogeneous)
     safe = numpy.abs(determinants) > 1e-6
-    inverse_affine = numpy.zeros((len(triangles), 3, 2), dtype=numpy.float32)
-    inverse_affine[safe] = numpy.linalg.solve(destination_homogeneous[safe], source_corners[safe])
-    pixel_homogeneous = numpy.column_stack([columns + box_left, rows + box_top, numpy.ones(len(rows))]).astype(numpy.float32)
-    source = numpy.einsum("mi,mij->mj", pixel_homogeneous, inverse_affine[triangle_ids])     # (M, 2)
+    affine = numpy.zeros((len(triangles) + 1, 3, 2), dtype=numpy.float32)                # the extra row serves id -1
+    affine[:-1][safe] = numpy.linalg.solve(drawn_homogeneous[safe], source_corners[safe])
+    affine[-1, 2] = (-10.0, -10.0)                                                        # uncovered pixels read outside the texture
 
-    map_x = numpy.full((box_height, box_width), -10.0, dtype=numpy.float32)
-    map_y = numpy.full((box_height, box_width), -10.0, dtype=numpy.float32)
-    map_x[rows, columns] = source[:, 0]
-    map_y[rows, columns] = source[:, 1]
-    fixed_map, interpolation_map = cv2.convertMaps(map_x, map_y, cv2.CV_16SC2)
-    output[box_top:box_bottom, box_left:box_right] = cv2.remap(
-        texture, fixed_map, interpolation_map, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0))
+    # Texture position of every pixel: six coefficient images, combined with the pixel's
+    # own column and row (no per-pixel matrices).
+    coefficients = affine[id_image]                                                       # (H, W, 3, 2); id -1 picks the extra row
+    pixel_columns = numpy.arange(drawn_width, dtype=numpy.float32)[None, :]
+    pixel_rows = numpy.arange(drawn_height, dtype=numpy.float32)[:, None]
+    map_x = coefficients[:, :, 0, 0] * pixel_columns + coefficients[:, :, 1, 0] * pixel_rows + coefficients[:, :, 2, 0]
+    map_y = coefficients[:, :, 0, 1] * pixel_columns + coefficients[:, :, 1, 1] * pixel_rows + coefficients[:, :, 2, 1]
+    drawn = cv2.remap(texture, map_x, map_y, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0))
+    if (drawn_width, drawn_height) != (box_width, box_height):
+        drawn = cv2.resize(drawn, (box_width, box_height), interpolation=cv2.INTER_LINEAR)
+    output[box_top:box_bottom, box_left:box_right] = drawn
     return output
 
 

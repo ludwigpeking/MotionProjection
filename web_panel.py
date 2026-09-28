@@ -35,6 +35,7 @@ JOBS = {
     "calibrate": {"title": "Calibration", "command": ["kinect_calibrate.py", "--panel"]},
     "calibrate_dense": {"title": "Full calibration (static scene)", "command": ["kinect_calibrate_dense.py", "--panel"]},
     "pointer_grid": {"title": "Landing test (static scene)", "command": ["kinect_pointer.py", "--panel", "--grid"]},
+    "latency_split": {"title": "Latency test", "command": ["measure_latency_split.py", "--panel"]},
     "red_dot": {"title": "Nose dot", "command": ["kinect_red_dot.py", "--panel", "--radius", "30"]},
     "face_mesh": {"title": "Face mesh", "command": ["kinect_face_mesh.py", "--panel"]},
     "pointer": {"title": "Pointer test", "command": ["kinect_pointer.py", "--panel"]},

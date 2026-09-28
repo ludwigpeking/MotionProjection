@@ -43,6 +43,11 @@ class PanelLink:
         """True when it is time to render and publish the next projector view (rendering costs ~30 ms)."""
         return self.enabled and time.perf_counter() - self.last_projector_view_time >= self.projector_view_period_seconds
 
+    def view_due(self):
+        """True when the next publish() would really write: building a view that will be
+        thrown away costs several milliseconds per frame."""
+        return self.enabled and time.perf_counter() - self.last_publish_time >= self.publish_period_seconds
+
     def publish(self, view_bgr, force=False):
         """Write the camera view as the live JPEG, at most every publish_period_seconds unless forced."""
         if not self.enabled:

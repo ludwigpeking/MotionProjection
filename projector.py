@@ -66,7 +66,7 @@ class ProjectorWindow:
         self._stop_if_closed()
         if self.background_level > 0:
             # A faint floor instead of pure black: the beam's extent stays visible on the scene.
-            image = numpy.maximum(image, self.background_level)
+            image = cv2.max(image, float(self.background_level))        # several times faster than numpy.maximum
         cv2.imshow(self.window_name, image)
         self.shown_once = True
         if self.fullscreen and not self.placement_checked:

@@ -317,6 +317,7 @@ face_depth_jump_frames = 5               # ... for this many frames (a bad depth
 face_mesh_hold_seconds = 0.5             # keep projecting the last mesh this long when MediaPipe loses the face
 face_mesh_depth_smoothing_passes = 2     # Laplacian passes on each vertex's relative depth over the canonical mesh
 face_mesh_depth_smoothing_weight = 0.5   # how far a vertex moves toward its neighbours' mean per pass
+face_mesh_render_scale = 0.5             # the mesh is drawn at this scale and enlarged: a quarter of the work at 0.5
 # MediaPipe's landmark depth is only roughly to scale; the Kinect depth at the landmarks
 # gives the true nose-to-cheek relief, and the mesh's relief is scaled to match it.
 face_relief_scale_smoothing_factor = 0.1 # per-frame fraction of the newly fitted relief scale adopted

@@ -1,0 +1,51 @@
+{
+ "projector_width": 1920,
+ "projector_height": 1080,
+ "camera_matrix": [
+  [
+   2239.6785760884027,
+   0.0,
+   971.8142099295682
+  ],
+  [
+   0.0,
+   2239.6785760884027,
+   1339.625866401151
+  ],
+  [
+   0.0,
+   0.0,
+   1.0
+  ]
+ ],
+ "distortion": [
+  0.015803094251525138,
+  -0.04332964960607135,
+  0.0,
+  0.0,
+  0.0
+ ],
+ "rotation_vector": [
+  0.11077970217620219,
+  0.41409950609747,
+  -3.097179174325208
+ ],
+ "translation_vector": [
+  0.12132016552594757,
+  -0.06692490928747888,
+  -0.025861265736427077
+ ],
+ "rms_pixels": 2.2493166260319923,
+ "holdout_rms_pixels": 4.525993435794571,
+ "point_count": 5029,
+ "inlier_count": 4826,
+ "depth_range_metres": [
+  0.6770735036243092,
+  3.181542444229126
+ ],
+ "focal_source": "complete model fitted from 5029 points at 1.18 .. 3.17 m",
+ "latency_none_before_seconds": 0.18247540000651497,
+ "latency_full_after_seconds": 0.38118800000986086,
+ "prediction_lead_seconds": 0.4111880000098609,
+ "calibrated_at": "2026-09-27T16:34:15"
+}

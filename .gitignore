@@ -1,0 +1,32 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Personal footage and anything made from it
+recordings/
+export_test/
+explainer/clips/
+
+# Run-time output of the tools
+diagnostics/
+*.log
+homography.json
+
+# Downloaded on first run (MediaPipe face landmarker model)
+face_landmarker.task
+
+# C++ build output
+freenect2_bridge/build/
+
+# Explainer: generated audio, renders and music
+explainer/media/
+explainer/audio/
+explainer/audio_zh/
+explainer/*.mp4
+explainer/*.mp3
+explainer/*.wav
+explainer/covers/*.png
+explainer/*.before_language.py
+explainer/*_backup.srt
+explainer/*_narration_only.srt

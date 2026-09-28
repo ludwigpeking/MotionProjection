@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projection Panel</title>
+<style>
+  :root {
+    --background: #141619;
+    --panel: #1e2126;
+    --border: #2f343c;
+    --text: #e8eaed;
+    --muted: #9aa3ad;
+    --accent: #4fa3ff;
+    --danger: #ff5c5c;
+    --ok: #4cd97b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  #status-line { color: var(--muted); }
+  #status-line.running { color: var(--ok); }
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(280px, 1fr);
+    gap: 16px;
+    padding: 16px 20px;
+  }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  section h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px; }
+  .views { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 1400px) { .views { grid-template-columns: 1fr; } }
+  #live-wrap, #projector-wrap { position: relative; background: #000; border-radius: 6px; overflow: hidden; aspect-ratio: 16 / 9; }
+  #live, #projector-view { width: 100%; height: 100%; object-fit: contain; display: block; }
+  #live { cursor: crosshair; }
+  #live-placeholder, #projector-placeholder {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--muted);
+  }
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  button {
+    background: #2a2f37;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font: inherit;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #08131f; border-color: var(--accent); font-weight: 600; }
+  button.danger { background: var(--danger); color: #1a0606; border-color: var(--danger); font-weight: 600; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  #log {
+    background: #0e1013;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    height: 320px;
+    overflow: auto;
+    font: 12.5px/1.5 ui-monospace, Consolas, monospace;
+    white-space: pre-wrap;
+    margin: 0;
+  }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
+  dt { color: var(--muted); }
+  dd { margin: 0; }
+  #message { min-height: 1.4em; color: var(--accent); }
+  .setting {
+    align-self: center; padding: 6px 10px; border-radius: 6px; background: #0e1013; border: 1px solid var(--border);
+    font: 600 14px/1.2 ui-monospace, Consolas, monospace; color: var(--text); margin-left: 6px;
+  }
+  .setting.on { color: var(--ok); }
+  .setting.off { color: var(--danger); }
+  #scene-wrap { position: relative; background: #0b0d10; border-radius: 6px; overflow: hidden; height: 520px; }
+  #scene-wrap canvas { display: block; }
+  #scene-note { position: absolute; left: 10px; top: 8px; color: var(--muted); font-size: 13px; pointer-events: none; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<header>
+  <h1>Projection panel</h1>
+  <span id="status-line">idle</span>
+  <span id="message"></span>
+</header>
+<main>
+  <div>
+    <section>
+      <div class="views">
+        <div>
+          <h2>Kinect camera view (click to aim in the pointer test)</h2>
+          <div id="live-wrap">
+            <img id="live" alt="live Kinect view">
+            <div id="live-placeholder">no tool running</div>
+          </div>
+        </div>
+        <div>
+          <h2>Projector's-eye view (depth image in the Kinect view)</h2>
+          <div id="projector-wrap">
+            <img id="projector-view" alt="projector view">
+            <div id="projector-placeholder">appears while a tool runs (pointer test, nose dot, calibration countdown)</div>
+          </div>
+        </div>
+      </div>
+      <div class="buttons">
+        <button id="run-kinect-view">Kinect view</button>
+        <button class="primary" id="run-calibrate-dense" title="Static scene with objects near and far, nobody in it: fits focal length, lens centre, distortion and pose">Full calibration</button>
+        <button id="run-pointer-grid" title="Static scene: projects discs at points across the scene and measures where they land">Landing test</button>
+        <button id="run-calibrate" title="Coded dots, with a person in the beam: pose, and focal length when near dots exist">Quick calibration</button>
+        <button class="primary" id="run-red-dot">Start nose dot</button>
+        <button class="primary" id="run-face-mesh">Face mesh</button>
+        <button id="run-pointer">Pointer test</button>
+        <button class="danger" id="stop">Stop</button>
+        <button id="record" title="record the raw camera view to recordings/ (toggle)">● Record</button>
+      </div>
+      <div class="buttons" id="layers">
+        <span class="hint" style="align-self: center;">left view:</span>
+        <button data-layer="colour">Colour</button>
+        <button data-layer="depth">Depth</button>
+        <button data-layer="beam">Beam reach</button>
+        <button data-layer="mesh">Mesh overlay</button>
+      </div>
+      <div class="buttons" id="adjust">
+        <span id="setting-lead" class="setting">lead: –</span>
+        <button data-command="lead-">−20 ms</button>
+        <button data-command="lead+">+20 ms</button>
+        <span id="setting-radius" class="setting">dot radius: –</span>
+        <button data-command="radius-">smaller</button>
+        <button data-command="radius+">bigger</button>
+        <span id="setting-predict" class="setting">prediction: –</span>
+        <button data-command="predict">toggle</button>
+        <span id="setting-record" class="setting"></span>
+      </div>
+      <div class="buttons" id="modes">
+        <span class="hint" style="align-self: center;">face mesh mode:</span>
+        <span id="setting-mode" class="setting">–</span>
+        <button data-mode="texture">Texture (feedback)</button>
+        <button data-mode="paint">Painted texture</button>
+        <button data-mode="wire">Wireframe</button>
+        <button data-mode="off">Projection off</button>
+      </div>
+      <div class="hint">
+        Calibration: keep the scene static, with objects at two or three depths inside the beam; it takes about 40 s.
+        Nose dot: the red disc follows landmark 4 (nose tip). Pointer test: click a point in the live view and a disc
+        is projected at its 3D position; the view reports the landing error in mm.
+      </div>
+    </section>
+    <section style="margin-top: 16px;">
+      <h2>3D scene: depth cloud, Kinect (cyan) and projector (magenta) with its beam</h2>
+      <div id="scene-wrap"><div id="scene-note">appears while a tool runs; drag to orbit, wheel to zoom, right-drag to pan</div></div>
+      <div class="hint" id="scene-status"></div>
+    </section>
+    <section style="margin-top: 16px;">
+      <h2>Log</h2>
+      <pre id="log"></pre>
+    </section>
+  </div>
+  <div>
+    <section>
+      <h2>Current calibration</h2>
+      <dl id="calibration"><dt>file</dt><dd>none</dd></dl>
+    </section>
+  </div>
+</main>
+<script>
+  var liveImage = document.getElementById("live");
+  var livePlaceholder = document.getElementById("live-placeholder");
+  var statusLine = document.getElementById("status-line");
+  var messageLine = document.getElementById("message");
+  var logElement = document.getElementById("log");
+  var currentJob = null;
+  var liveAvailable = false;
+
+  function showMessage(text) {
+    messageLine.textContent = text;
+    setTimeout(function () { if (messageLine.textContent === text) { messageLine.textContent = ""; } }, 4000);
+  }
+
+  function post(path) {
+    return fetch(path, { method: "POST" }).then(function (response) { return response.json(); })
+      .then(function (result) { showMessage(result.message); refreshStatus(); return result; })
+      .catch(function (error) { showMessage("panel unreachable: " + error); });
+  }
+
+  var projectorImage = document.getElementById("projector-view");
+  var projectorPlaceholder = document.getElementById("projector-placeholder");
+
+  // A placeholder only after the picture has really stopped: single failed fetches (a read that
+  // lands on the file swap) must not flash it.
+  var PLACEHOLDER_AFTER_MILLISECONDS = 1500;
+  var lastLiveSuccess = 0;
+  var lastProjectorSuccess = 0;
+
+  function refreshLive() {
+    if (!liveAvailable) { return; }
+    var probe = new Image();
+    probe.onload = function () {
+      liveImage.src = probe.src; lastLiveSuccess = Date.now(); livePlaceholder.style.display = "none";
+    };
+    probe.onerror = function () {
+      if (Date.now() - lastLiveSuccess > PLACEHOLDER_AFTER_MILLISECONDS) { livePlaceholder.style.display = "flex"; }
+    };
+    probe.src = "/api/live.jpg?t=" + Date.now();
+  }
+
+  function refreshProjectorView() {
+    if (!liveAvailable) { return; }
+    var probe = new Image();
+    probe.onload = function () {
+      projectorImage.src = probe.src; lastProjectorSuccess = Date.now(); projectorPlaceholder.style.display = "none";
+    };
+    probe.onerror = function () {
+      if (Date.now() - lastProjectorSuccess > PLACEHOLDER_AFTER_MILLISECONDS) { projectorPlaceholder.style.display = "flex"; }
+    };
+    probe.src = "/api/projector_view.jpg?t=" + Date.now();
+  }
+
+  function refreshStatus() {
+    fetch("/api/status").then(function (response) { return response.json(); }).then(function (status) {
+      currentJob = status.running ? status.job : null;
+      liveAvailable = status.live_view;
+      if (status.running) {
+        statusLine.textContent = status.title + " running for " + status.seconds + " s";
+        statusLine.className = "running";
+      } else if (status.title) {
+        statusLine.textContent = status.title + " ended (exit code " + status.exit_code + ")";
+        statusLine.className = "";
+        // The tool has ended: say so at once (the last image stays on disk and would otherwise
+        // keep loading as if live).
+        livePlaceholder.style.display = "flex";
+        livePlaceholder.textContent = "no tool running: " + status.title + " ended (exit code " + status.exit_code + ")";
+        projectorPlaceholder.style.display = "flex";
+        liveAvailable = false;
+      } else {
+        statusLine.textContent = "idle";
+        statusLine.className = "";
+      }
+      var atBottom = logElement.scrollTop + logElement.clientHeight >= logElement.scrollHeight - 20;
+      logElement.textContent = status.log.join("\n");
+      if (atBottom) { logElement.scrollTop = logElement.scrollHeight; }
+      var adjustButtons = document.querySelectorAll("#adjust button");
+      for (var index = 0; index < adjustButtons.length; index += 1) {
+        var command = adjustButtons[index].dataset.command;
+        var sharedWithMesh = command === "lead-" || command === "lead+" || command === "predict";
+        adjustButtons[index].disabled = !(status.running && (status.job === "red_dot"
+          || (status.job === "face_mesh" && sharedWithMesh)));
+      }
+      var modeButtons = document.querySelectorAll("#modes button");
+      for (var modeIndex = 0; modeIndex < modeButtons.length; modeIndex += 1) {
+        modeButtons[modeIndex].disabled = !(status.running && status.job === "face_mesh");
+      }
+      document.getElementById("record").disabled = !status.running;
+      if (!status.running) { document.getElementById("record").textContent = "● Record"; }
+      refreshSettings();
+      var layerButtons = document.querySelectorAll("#layers button");
+      for (var layerIndex = 0; layerIndex < layerButtons.length; layerIndex += 1) {
+        var layerName = layerButtons[layerIndex].dataset.layer;
+        var layerAvailable = (status.running && status.job === "pointer" && layerName !== "mesh")
+          || (status.running && status.job === "kinect_view" && (layerName === "colour" || layerName === "depth"))
+          || (status.running && status.job === "face_mesh" && layerName !== "beam");
+        layerButtons[layerIndex].disabled = !layerAvailable;
+      }
+    }).catch(function () {
+      statusLine.textContent = "panel unreachable";
+      statusLine.className = "";
+    });
+  }
+
+  function refreshSettings() {
+    var leadElement = document.getElementById("setting-lead");
+    var radiusElement = document.getElementById("setting-radius");
+    var predictElement = document.getElementById("setting-predict");
+    var recordElement = document.getElementById("setting-record");
+    if (currentJob === null) {
+      leadElement.textContent = "lead: –"; radiusElement.textContent = "dot radius: –";
+      predictElement.textContent = "prediction: –"; predictElement.className = "setting"; recordElement.textContent = "";
+      return;
+    }
+    fetch("/api/state?t=" + Date.now()).then(function (response) {
+      if (!response.ok) { throw new Error("no state"); }
+      return response.json();
+    }).then(function (state) {
+      if (state.tool === "red_dot") {
+        leadElement.textContent = "lead: " + state.lead_milliseconds + " ms";
+        radiusElement.textContent = "dot radius: " + state.radius_pixels + " px";
+        predictElement.textContent = "prediction: " + (state.prediction ? "ON" : "OFF");
+        predictElement.className = "setting " + (state.prediction ? "on" : "off");
+      }
+      if (state.tool === "face_mesh") {
+        leadElement.textContent = "lead: " + state.lead_milliseconds + " ms (gain " + state.prediction_gain + ")";
+        predictElement.textContent = "prediction: " + (state.prediction ? "ON" : "OFF");
+        predictElement.className = "setting " + (state.prediction ? "on" : "off");
+        document.getElementById("setting-mode").textContent = state.mode
+          + (state.paint_available ? "" : " (no painted texture found)");
+      } else {
+        document.getElementById("setting-mode").textContent = "–";
+      }
+      recordElement.textContent = state.recording ? state.recording_text : "";
+      recordElement.className = "setting " + (state.recording ? "off" : "");
+      document.getElementById("record").textContent = state.recording ? "■ Stop recording" : "● Record";
+    }).catch(function () {});
+  }
+
+  function refreshCalibration() {
+    fetch("/api/calibration").then(function (response) { return response.json(); }).then(function (summary) {
+      var list = document.getElementById("calibration");
+      if (!summary.exists) { list.innerHTML = "<dt>file</dt><dd>none yet: run the calibration</dd>"; return; }
+      list.innerHTML = ""
+        + "<dt>made</dt><dd>" + summary.calibrated_at + "</dd>"
+        + "<dt>fit</dt><dd>" + summary.inlier_count + " / " + summary.point_count + " dots, rms "
+        + Number(summary.rms_pixels).toFixed(2) + " px</dd>"
+        + "<dt>held out</dt><dd>" + Number(summary.holdout_rms_pixels).toFixed(2) + " px rms</dd>"
+        + "<dt>focal</dt><dd>" + Math.round(summary.focal_pixels) + " px</dd>"
+        + "<dt>principal point</dt><dd>(" + Math.round(summary.principal_point[0]) + ", "
+        + Math.round(summary.principal_point[1]) + ")</dd>"
+        + "<dt>latency</dt><dd>" + Math.round(summary.latency_full_after_seconds * 1000) + " ms, lead "
+        + Math.round(summary.prediction_lead_seconds * 1000) + " ms</dd>";
+    });
+  }
+
+  document.getElementById("run-kinect-view").onclick = function () { post("/api/run?job=kinect_view"); };
+  document.getElementById("run-calibrate").onclick = function () { post("/api/run?job=calibrate"); };
+  document.getElementById("run-calibrate-dense").onclick = function () { post("/api/run?job=calibrate_dense"); };
+  document.getElementById("run-pointer-grid").onclick = function () { post("/api/run?job=pointer_grid"); };
+  document.getElementById("run-red-dot").onclick = function () { post("/api/run?job=red_dot"); };
+  document.getElementById("run-pointer").onclick = function () { post("/api/run?job=pointer"); };
+  document.getElementById("stop").onclick = function () { post("/api/stop"); };
+  document.getElementById("record").onclick = function () { post("/api/command?text=record"); };
+  document.getElementById("run-face-mesh").onclick = function () { post("/api/run?job=face_mesh"); };
+  var modeButtons = document.querySelectorAll("#modes button");
+  for (var modeIndex = 0; modeIndex < modeButtons.length; modeIndex += 1) {
+    modeButtons[modeIndex].onclick = function (event) {
+      post("/api/command?text=" + encodeURIComponent("mode " + event.currentTarget.dataset.mode));
+    };
+  }
+
+  var layerButtons = document.querySelectorAll("#layers button");
+  for (var layerIndex = 0; layerIndex < layerButtons.length; layerIndex += 1) {
+    layerButtons[layerIndex].onclick = function (event) {
+      post("/api/command?text=" + encodeURIComponent("layer " + event.currentTarget.dataset.layer));
+    };
+  }
+
+  var adjustButtons = document.querySelectorAll("#adjust button");
+  for (var buttonIndex = 0; buttonIndex < adjustButtons.length; buttonIndex += 1) {
+    adjustButtons[buttonIndex].onclick = function (event) {
+      post("/api/command?text=" + encodeURIComponent(event.currentTarget.dataset.command));
+    };
+  }
+
+  liveImage.onclick = function (event) {
+    if (currentJob !== "pointer") { return; }
+    // The image is letterboxed inside its box: convert the click to a fraction of the picture itself.
+    var box = liveImage.getBoundingClientRect();
+    var pictureAspect = liveImage.naturalWidth / liveImage.naturalHeight;
+    var boxAspect = box.width / box.height;
+    var pictureWidth = boxAspect > pictureAspect ? box.height * pictureAspect : box.width;
+    var pictureHeight = boxAspect > pictureAspect ? box.height : box.width / pictureAspect;
+    var offsetX = (box.width - pictureWidth) / 2;
+    var offsetY = (box.height - pictureHeight) / 2;
+    var xFraction = (event.clientX - box.left - offsetX) / pictureWidth;
+    var yFraction = (event.clientY - box.top - offsetY) / pictureHeight;
+    if (xFraction < 0 || xFraction > 1 || yFraction < 0 || yFraction > 1) { return; }
+    post("/api/command?text=" + encodeURIComponent("aim " + xFraction.toFixed(4) + " " + yFraction.toFixed(4)));
+  };
+
+  refreshStatus();
+  refreshCalibration();
+  setInterval(refreshStatus, 1000);
+</script>
+<script type="module">
+  import * as THREE from "three";
+  import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+  // Kinect frame (x to the image's right = the sensor's left, y up, z forward) -> three.js
+  // (x right, y up, z toward the viewer): a 180 degree turn about y, so the scene is seen
+  // from behind the Kinect, un-mirrored. No reflection: handedness is preserved.
+  function toScene(x, y, z) { return new THREE.Vector3(-x, y, -z); }
+
+  var wrap = document.getElementById("scene-wrap");
+  var sceneStatus = document.getElementById("scene-status");
+  var renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  wrap.appendChild(renderer.domElement);
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b0d10);
+  var camera = new THREE.PerspectiveCamera(50, wrap.clientWidth / wrap.clientHeight, 0.02, 50);
+  camera.position.set(1.2, 1.0, 1.8);
+  var controls = new OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 0, -1.5);
+  controls.update();
+  scene.add(new THREE.GridHelper(6, 12, 0x2f343c, 0x22262c));
+  scene.add(new THREE.AxesHelper(0.3));
+
+  var pointsGeometry = new THREE.BufferGeometry();
+  var pointsMaterial = new THREE.PointsMaterial({ size: 0.012, vertexColors: true });
+  var cloud = new THREE.Points(pointsGeometry, pointsMaterial);
+  scene.add(cloud);
+  var frustumGroup = new THREE.Group();
+  scene.add(frustumGroup);
+
+  function addLines(vertexList, colour) {
+    var flat = [];
+    for (var index = 0; index < vertexList.length; index += 1) {
+      flat.push(vertexList[index].x, vertexList[index].y, vertexList[index].z);
+    }
+    var geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(flat, 3));
+    frustumGroup.add(new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color: colour })));
+  }
+
+  function pyramid(apex, corners, colour) {
+    var segments = [];
+    for (var index = 0; index < 4; index += 1) {
+      segments.push(apex, corners[index]);
+      segments.push(corners[index], corners[(index + 1) % 4]);
+    }
+    addLines(segments, colour);
+  }
+
+  function drawKinect(focalX, focalY, centreX, centreY, width, height, distance) {
+    var corners = [[0, 0], [width, 0], [width, height], [0, height]].map(function (uv) {
+      return toScene((uv[0] - centreX) / focalX * distance, -(uv[1] - centreY) / focalY * distance, distance);
+    });
+    pyramid(toScene(0, 0, 0), corners, 0x33d6ff);
+    var body = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.06, 0.06),
+                              new THREE.MeshBasicMaterial({ color: 0x33d6ff, wireframe: true }));
+    body.position.copy(toScene(0, 0, -0.03));
+    frustumGroup.add(body);
+  }
+
+  function drawProjector(geometry, distance) {
+    var rotation = geometry.rotation;           // world -> projector (OpenCV: x right, y down, z forward)
+    var translation = geometry.translation;
+    function worldFromProjector(px, py, pz) {   // X = R^T (P - t)
+      var dx = px - translation[0], dy = py - translation[1], dz = pz - translation[2];
+      return toScene(rotation[0][0] * dx + rotation[1][0] * dy + rotation[2][0] * dz,
+                     rotation[0][1] * dx + rotation[1][1] * dy + rotation[2][1] * dz,
+                     rotation[0][2] * dx + rotation[1][2] * dy + rotation[2][2] * dz);
+    }
+    var focal = geometry.focal_pixels;
+    var centreX = geometry.principal_point[0], centreY = geometry.principal_point[1];
+    var width = geometry.projector_width, height = geometry.projector_height;
+    var corners = [[0, 0], [width, 0], [width, height], [0, height]].map(function (uv) {
+      return worldFromProjector((uv[0] - centreX) / focal * distance, (uv[1] - centreY) / focal * distance, distance);
+    });
+    var apex = worldFromProjector(0, 0, 0);
+    pyramid(apex, corners, 0xff4fd8);
+    addLines([apex, worldFromProjector(0, 0, distance)], 0xaa2f90);     // optical axis
+    var body = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.05, 0.12),
+                              new THREE.MeshBasicMaterial({ color: 0xff4fd8, wireframe: true }));
+    body.position.copy(apex);
+    frustumGroup.add(body);
+    return apex;
+  }
+
+  var cloudHeader = null;
+  var lastGeometryText = "";
+
+  function refreshCloud() {
+    fetch("/api/cloud.bin?t=" + Date.now()).then(function (response) {
+      if (!response.ok) { throw new Error("no cloud"); }
+      return response.arrayBuffer();
+    }).then(function (buffer) {
+      var view = new DataView(buffer);
+      if (view.getUint32(0, true) !== 0x434C4F55) { return; }
+      var count = view.getUint32(4, true);
+      var header = { focalX: view.getFloat32(8, true), focalY: view.getFloat32(12, true),
+                     centreX: view.getFloat32(16, true), centreY: view.getFloat32(20, true),
+                     width: view.getUint32(24, true), height: view.getUint32(28, true) };
+      var xyz = new Float32Array(buffer, 32, count * 3);
+      var rgb = new Uint8Array(buffer, 32 + count * 12, count * 3);
+      var positions = new Float32Array(count * 3);
+      var colours = new Float32Array(count * 3);
+      for (var index = 0; index < count; index += 1) {
+        positions[index * 3] = -xyz[index * 3];
+        positions[index * 3 + 1] = xyz[index * 3 + 1];
+        positions[index * 3 + 2] = -xyz[index * 3 + 2];
+        colours[index * 3] = rgb[index * 3] / 255;
+        colours[index * 3 + 1] = rgb[index * 3 + 1] / 255;
+        colours[index * 3 + 2] = rgb[index * 3 + 2] / 255;
+      }
+      pointsGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      pointsGeometry.setAttribute("color", new THREE.BufferAttribute(colours, 3));
+      pointsGeometry.computeBoundingSphere();
+      cloudHeader = header;
+      document.getElementById("scene-note").style.display = "none";
+      sceneStatus.textContent = count + " points";
+      refreshGeometry();
+    }).catch(function () {});
+  }
+
+  function refreshGeometry() {
+    fetch("/api/geometry").then(function (response) { return response.json(); }).then(function (geometry) {
+      var text = JSON.stringify(geometry) + JSON.stringify(cloudHeader);
+      if (text === lastGeometryText) { return; }
+      lastGeometryText = text;
+      while (frustumGroup.children.length) { frustumGroup.remove(frustumGroup.children[0]); }
+      if (cloudHeader) {
+        drawKinect(cloudHeader.focalX, cloudHeader.focalY, cloudHeader.centreX, cloudHeader.centreY,
+                   cloudHeader.width, cloudHeader.height, 0.5);
+      }
+      if (geometry.exists) {
+        var apex = drawProjector(geometry, 3.0);
+        var centre = geometry.projector_centre;
+        sceneStatus.textContent += "; projector at (" + centre[0].toFixed(2) + ", " + centre[1].toFixed(2) + ", "
+          + centre[2].toFixed(2) + ") m in the Kinect frame (x = image right, y up, z forward)";
+      }
+    }).catch(function () {});
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  window.addEventListener("resize", function () {
+    renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+    camera.aspect = wrap.clientWidth / wrap.clientHeight;
+    camera.updateProjectionMatrix();
+  });
+  animate();
+  setInterval(refreshCloud, 1000);
+  setInterval(refreshLive, 120);
+  setInterval(refreshProjectorView, 250);
+  setInterval(refreshCalibration, 5000);
+</script>
+</body>
+</html>

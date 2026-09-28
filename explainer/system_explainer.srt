@@ -1,0 +1,688 @@
+1
+00:00:02,395 --> 00:00:06,950
+This is a projection that follows a moving face.
+
+2
+00:00:06,950 --> 00:00:08,430
+A Kinect depth camera watches.
+
+3
+00:00:08,430 --> 00:00:10,990
+A small Optoma projector paints.
+
+4
+00:00:10,990 --> 00:00:14,095
+This video explains the geometry that links them:
+
+5
+00:00:14,095 --> 00:00:16,930
+how a camera pixel becomes a point in the room,
+
+6
+00:00:16,930 --> 00:00:19,431
+and how that point becomes a projector pixel.
+
+7
+00:00:21,538 --> 00:00:23,838
+Two pieces of equipment.
+
+8
+00:00:23,838 --> 00:00:26,643
+The Kinect holds two sensors.
+
+9
+00:00:26,643 --> 00:00:30,503
+A colour camera, 1920 by 1080 pixels.
+
+10
+00:00:30,503 --> 00:00:35,483
+And an infrared depth camera, 512 by 424 pixels,
+
+11
+00:00:35,483 --> 00:00:38,899
+which measures distance by timing its own light.
+
+12
+00:00:38,899 --> 00:00:43,919
+The projector is a small Optoma, 1920 by 1080 pixels,
+
+13
+00:00:43,919 --> 00:00:46,702
+connected to the computer as a second screen.
+
+14
+00:00:48,768 --> 00:00:51,798
+Here is the rig from above.
+
+15
+00:00:51,798 --> 00:00:54,433
+The Kinect sits at the origin.
+
+16
+00:00:54,433 --> 00:00:57,098
+The projector stands to its side.
+
+17
+00:00:57,098 --> 00:01:00,808
+The distance between them is the baseline, b.
+
+18
+00:01:00,808 --> 00:01:03,708
+The person is at a distance d in front,
+
+19
+00:01:03,708 --> 00:01:05,844
+and a wall is further back.
+
+20
+00:01:05,844 --> 00:01:08,579
+The two devices never share a viewpoint,
+
+21
+00:01:08,579 --> 00:01:12,569
+so a pixel in the camera is not a pixel in the projector.
+
+22
+00:01:12,569 --> 00:01:15,399
+The only common ground is the room itself.
+
+23
+00:01:17,562 --> 00:01:19,642
+Three images are involved,
+
+24
+00:01:19,642 --> 00:01:22,887
+so there are three sets of pixel coordinates.
+
+25
+00:01:22,887 --> 00:01:28,147
+x and y in the depth camera, with a distance d at every pixel.
+
+26
+00:01:28,147 --> 00:01:31,217
+x prime and y prime in the colour camera.
+
+27
+00:01:31,217 --> 00:01:34,907
+x double prime and y double prime in the projector.
+
+28
+00:01:34,907 --> 00:01:38,542
+In every image, x counts columns to the right,
+
+29
+00:01:38,542 --> 00:01:40,767
+and y counts rows downward.
+
+30
+00:01:40,767 --> 00:01:45,352
+The room has one set of coordinates: capital X, Y and Z,
+
+31
+00:01:45,352 --> 00:01:48,396
+in metres, measured from the colour camera.
+
+32
+00:01:48,396 --> 00:01:51,766
+X to the right, Y up, and Z straight ahead.
+
+33
+00:01:53,882 --> 00:01:56,917
+How does a pixel become a point?
+
+34
+00:01:56,917 --> 00:01:59,072
+A pixel names a direction:
+
+35
+00:01:59,072 --> 00:02:03,857
+a ray that leaves the lens centre and passes through that pixel.
+
+36
+00:02:03,857 --> 00:02:05,592
+The focal length, f,
+
+37
+00:02:05,592 --> 00:02:08,752
+is the distance from the lens centre to the image,
+
+38
+00:02:08,752 --> 00:02:10,577
+counted in pixels.
+
+39
+00:02:10,577 --> 00:02:15,882
+Take the pixel's column x prime, and subtract the image centre.
+
+40
+00:02:15,882 --> 00:02:18,322
+Divide by f, and you have the slope of the ray.
+
+41
+00:02:18,322 --> 00:02:22,142
+Multiply by the distance Z, and you have the sideways position,
+
+42
+00:02:22,142 --> 00:02:24,295
+capital X, in metres.
+
+43
+00:02:24,295 --> 00:02:27,435
+The rows work the same way and give capital Y,
+
+44
+00:02:27,435 --> 00:02:28,615
+with a minus sign,
+
+45
+00:02:28,615 --> 00:02:32,035
+because rows count downward while Y points up.
+
+46
+00:02:32,035 --> 00:02:35,457
+So a pixel plus a distance is a point in the room.
+
+47
+00:02:37,502 --> 00:02:40,402
+But the distance was measured by the other lens,
+
+48
+00:02:40,402 --> 00:02:42,982
+five centimetres to the side.
+
+49
+00:02:42,982 --> 00:02:46,727
+How does a depth pixel find its colour pixel?
+
+50
+00:02:46,727 --> 00:02:51,052
+First, the depth pixel x, y, with its distance d,
+
+51
+00:02:51,052 --> 00:02:53,407
+is lifted to a point in the room,
+
+52
+00:02:53,407 --> 00:02:56,437
+using the depth camera's own focal length.
+
+53
+00:02:56,437 --> 00:02:57,277
+Second,
+
+54
+00:02:57,277 --> 00:03:00,887
+the point is shifted by the offset between the two lenses,
+
+55
+00:03:00,887 --> 00:03:03,077
+which was measured at the factory.
+
+56
+00:03:03,077 --> 00:03:06,327
+Third, the point is projected into the colour camera.
+
+57
+00:03:06,327 --> 00:03:10,047
+That gives the colour pixel, x prime, y prime,
+
+58
+00:03:10,047 --> 00:03:11,974
+that sees the same spot.
+
+59
+00:03:11,974 --> 00:03:15,344
+The shift between the two images depends on distance:
+
+60
+00:03:15,344 --> 00:03:18,084
+near things shift more than far things.
+
+61
+00:03:18,084 --> 00:03:19,814
+Done for every depth pixel,
+
+62
+00:03:19,814 --> 00:03:22,972
+this gives every colour pixel its own distance.
+
+63
+00:03:24,985 --> 00:03:27,455
+The result is a point X, Y,
+
+64
+00:03:27,455 --> 00:03:31,805
+Z for every colour pixel that has a distance.
+
+65
+00:03:31,805 --> 00:03:35,160
+This is the real data from the rig.
+
+66
+00:03:35,160 --> 00:03:39,300
+The depth cloud of the room, with the Kinect in cyan,
+
+67
+00:03:39,300 --> 00:03:41,520
+and the projector in magenta,
+
+68
+00:03:41,520 --> 00:03:44,253
+drawn where the calibration placed it.
+
+69
+00:03:46,292 --> 00:03:48,242
+Now the projector.
+
+70
+00:03:48,242 --> 00:03:50,402
+It is a camera running backwards:
+
+71
+00:03:50,402 --> 00:03:53,517
+light leaves through the lens where a camera would take it in.
+
+72
+00:03:53,517 --> 00:03:55,337
+So it has the same description.
+
+73
+00:03:55,337 --> 00:03:58,622
+A focal length, an image centre, and a pose:
+
+74
+00:03:58,622 --> 00:04:01,452
+a rotation R and a translation t,
+
+75
+00:04:01,452 --> 00:04:04,307
+which say where it sits relative to the Kinect.
+
+76
+00:04:04,307 --> 00:04:05,867
+Take a point in the room.
+
+77
+00:04:05,867 --> 00:04:09,132
+Rotate and translate it into the projector's own frame.
+
+78
+00:04:09,132 --> 00:04:12,412
+Divide by its distance, multiply by the focal length,
+
+79
+00:04:12,412 --> 00:04:14,517
+and add the image centre.
+
+80
+00:04:14,517 --> 00:04:17,072
+The result is x double prime, y double prime:
+
+81
+00:04:17,072 --> 00:04:19,396
+the projector pixel that lights that point.
+
+82
+00:04:21,555 --> 00:04:23,405
+To find the pose,
+
+83
+00:04:23,405 --> 00:04:27,240
+the projector has to show where its pixels land.
+
+84
+00:04:27,240 --> 00:04:32,505
+It draws a grid of dots, each at a known pixel, x double prime,
+
+85
+00:04:32,505 --> 00:04:34,415
+y double prime.
+
+86
+00:04:34,415 --> 00:04:39,915
+Over a sequence of frames, every dot blinks its own binary code.
+
+87
+00:04:39,915 --> 00:04:43,835
+When the camera sees a dot at x prime, y prime,
+
+88
+00:04:43,835 --> 00:04:47,385
+the code says which projector pixel it came from.
+
+89
+00:04:47,385 --> 00:04:50,842
+And the depth gives that dot's position in the room.
+
+90
+00:04:50,842 --> 00:04:54,882
+So each dot is one pair: a point X, Y, Z,
+
+91
+00:04:54,882 --> 00:04:57,132
+and the projector pixel that lit it.
+
+92
+00:04:59,508 --> 00:05:02,968
+The model has seven unknowns.
+
+93
+00:05:02,968 --> 00:05:05,933
+Three for the rotation, three for the translation,
+
+94
+00:05:05,933 --> 00:05:08,243
+and the focal length.
+
+95
+00:05:08,243 --> 00:05:12,998
+Each pair gives two equations: one for x double prime,
+
+96
+00:05:12,998 --> 00:05:15,183
+one for y double prime.
+
+97
+00:05:15,183 --> 00:05:18,743
+A few hundred pairs are far more than enough,
+
+98
+00:05:18,743 --> 00:05:22,848
+so the fit looks for the values that bring the model's dots
+
+99
+00:05:22,848 --> 00:05:26,328
+closest to the dots the projector really drew,
+
+100
+00:05:26,328 --> 00:05:30,202
+and it ignores dots that were decoded wrongly.
+
+101
+00:05:30,202 --> 00:05:35,257
+Written as one matrix, the projector is K times R, t:
+
+102
+00:05:35,257 --> 00:05:39,657
+three rows, four columns, taking room points to pixels.
+
+103
+00:05:41,812 --> 00:05:44,247
+Why does the focal length matter?
+
+104
+00:05:44,247 --> 00:05:46,392
+It sets the magnification.
+
+105
+00:05:46,392 --> 00:05:49,502
+An object of size s, at distance D,
+
+106
+00:05:49,502 --> 00:05:52,862
+covers f times s over D pixels.
+
+107
+00:05:52,862 --> 00:05:55,302
+A face fifteen centimetres wide,
+
+108
+00:05:55,302 --> 00:05:57,732
+ninety centimetres from the projector,
+
+109
+00:05:57,732 --> 00:06:00,507
+covers about three hundred and seventy pixels.
+
+110
+00:06:00,507 --> 00:06:02,802
+If the model's focal length is wrong,
+
+111
+00:06:02,802 --> 00:06:05,735
+the image on the face is the wrong size.
+
+112
+00:06:07,822 --> 00:06:09,907
+And there is a trap.
+
+113
+00:06:09,907 --> 00:06:12,467
+If every dot lands on the wall,
+
+114
+00:06:12,467 --> 00:06:16,212
+the fit cannot tell a short focal length with the projector
+
+115
+00:06:16,212 --> 00:06:19,682
+close from a long one with the projector far back.
+
+116
+00:06:19,682 --> 00:06:22,447
+Both draw the same dots on the wall.
+
+117
+00:06:22,447 --> 00:06:25,262
+They only disagree on a near object.
+
+118
+00:06:25,262 --> 00:06:28,182
+So the scan needs dots on something near,
+
+119
+00:06:28,182 --> 00:06:30,572
+such as the person sitting in the beam,
+
+120
+00:06:30,572 --> 00:06:33,304
+and those dots pin the focal length.
+
+121
+00:06:35,378 --> 00:06:37,918
+Now the moving target.
+
+122
+00:06:37,918 --> 00:06:40,338
+In every camera frame,
+
+123
+00:06:40,338 --> 00:06:43,808
+MediaPipe finds 468 landmarks on the face,
+
+124
+00:06:43,808 --> 00:06:47,453
+as colour pixels x prime, y prime.
+
+125
+00:06:47,453 --> 00:06:48,678
+That is the shape.
+
+126
+00:06:48,678 --> 00:06:50,638
+The Kinect adds the distance,
+
+127
+00:06:50,638 --> 00:06:54,453
+and the depth at the landmarks sets how deep the relief is.
+
+128
+00:06:54,453 --> 00:06:58,168
+So each landmark becomes a point X, Y, Z.
+
+129
+00:06:58,168 --> 00:07:00,569
+Each point goes through the projector model.
+
+130
+00:07:00,569 --> 00:07:03,644
+That gives the mesh as the projector must draw it.
+
+131
+00:07:03,644 --> 00:07:06,606
+Triangles that face away from the projector are not drawn.
+
+132
+00:07:08,718 --> 00:07:12,723
+How does a flat painting end up on a curved face?
+
+133
+00:07:12,723 --> 00:07:16,098
+Every point of the mesh has a second address:
+
+134
+00:07:16,098 --> 00:07:20,453
+a fixed place on a flat, square image, the texture.
+
+135
+00:07:20,453 --> 00:07:22,593
+That layout is the U V map.
+
+136
+00:07:22,593 --> 00:07:24,833
+It is the face, unfolded.
+
+137
+00:07:24,833 --> 00:07:27,528
+In Blender, the paint goes onto the mesh,
+
+138
+00:07:27,528 --> 00:07:29,389
+and lands in that square.
+
+139
+00:07:29,389 --> 00:07:32,764
+At run time, the triangles are the same ones.
+
+140
+00:07:32,764 --> 00:07:35,689
+Each triangle of the square is stretched onto the matching
+
+141
+00:07:35,689 --> 00:07:37,559
+triangle of the live mesh,
+
+142
+00:07:37,559 --> 00:07:39,413
+in the projector's image.
+
+143
+00:07:39,413 --> 00:07:42,287
+Only the corners move, and the paint follows.
+
+144
+00:07:44,335 --> 00:07:46,650
+Where does error come from?
+
+145
+00:07:46,650 --> 00:07:50,110
+Mostly from depth, through the baseline.
+
+146
+00:07:50,110 --> 00:07:54,645
+Suppose the measured distance is too long by delta Z.
+
+147
+00:07:54,645 --> 00:07:58,095
+The system then believes the point lies further along the
+
+148
+00:07:58,095 --> 00:07:59,660
+camera's ray.
+
+149
+00:07:59,660 --> 00:08:03,245
+It aims the projector at that believed point.
+
+150
+00:08:03,245 --> 00:08:07,520
+But the light stops at the real surface, before it gets there.
+
+151
+00:08:07,520 --> 00:08:09,935
+It lands beside the true point.
+
+152
+00:08:09,935 --> 00:08:14,645
+The sideways shift is about delta Z, times the baseline b,
+
+153
+00:08:14,645 --> 00:08:16,645
+over the distance d.
+
+154
+00:08:16,645 --> 00:08:19,355
+With the projector seventy centimetres away,
+
+155
+00:08:19,355 --> 00:08:24,792
+one centimetre of depth error moves the image nine millimetres.
+
+156
+00:08:24,792 --> 00:08:26,177
+Slide the projector next to the Kinect,
+
+157
+00:08:26,177 --> 00:08:29,021
+and the same error moves it about one millimetre.
+
+158
+00:08:31,208 --> 00:08:35,898
+Put together, this is a feedback loop around a moving object.
+
+159
+00:08:35,898 --> 00:08:37,203
+The face moves.
+
+160
+00:08:37,203 --> 00:08:39,383
+The colour camera captures it.
+
+161
+00:08:39,383 --> 00:08:43,123
+MediaPipe finds the landmarks: that is the target.
+
+162
+00:08:43,123 --> 00:08:46,628
+The depth camera attaches a distance to each landmark,
+
+163
+00:08:46,628 --> 00:08:48,684
+which makes it a point in the room.
+
+164
+00:08:48,684 --> 00:08:52,249
+The projector model turns the point into a projector pixel,
+
+165
+00:08:52,249 --> 00:08:54,339
+and light lands on the face.
+
+166
+00:08:54,339 --> 00:08:57,019
+Then the face moves again, and the loop runs again,
+
+167
+00:08:57,019 --> 00:08:58,784
+fifteen times a second.
+
+168
+00:08:58,784 --> 00:09:00,969
+One pass takes a fraction of a second,
+
+169
+00:09:00,969 --> 00:09:03,629
+so the system aims at where the face will be when the light
+
+170
+00:09:03,629 --> 00:09:04,572
+arrives.
+
+171
+00:09:06,685 --> 00:09:11,565
+Camera pixel, to a point in the room, to a projector pixel,
+
+172
+00:09:11,565 --> 00:09:13,485
+and back onto the face.
+

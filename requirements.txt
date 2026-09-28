@@ -1,0 +1,9 @@
+opencv-python>=4.9
+mediapipe>=0.10.14
+numpy<2.3
+screeninfo>=0.8
+pillow>=10            # video covers
+comtypes>=1.4          # Kinect v2 through the Microsoft SDK (optional path)
+pykinect2==0.1.0       # then run patch_pykinect2.py (optional path)
+manim>=0.19            # explainer film
+edge-tts>=7            # explainer narration, fallback voice

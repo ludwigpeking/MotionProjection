@@ -47,7 +47,8 @@ NARRATION_DATA_PATH = os.path.join(AUDIO_DIRECTORY, "narration.json")
 SUBTITLE_FILE_PATH = "system_explainer.srt" if LANGUAGE == "en" else f"system_explainer_{LANGUAGE}.srt"
 CANONICAL_FACE_PATH = os.path.join("..", "canonical_face_model.obj")
 CLIP_FRAMES_PER_SECOND = 15.0
-AUTHOR_CREDIT = "Richard Qian Li 陈腐粉碎机  ·  ITP, NYU"
+AUTHOR_CREDITS = {"en": "Richard Qian Li 陈腐粉碎机  ·  ITP, NYU", "zh": "Richard Qian Li 陈腐粉碎机"}
+AUTHOR_CREDIT = AUTHOR_CREDITS[LANGUAGE]
 
 
 KINECT_COLOUR = BLUE

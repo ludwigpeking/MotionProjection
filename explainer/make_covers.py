@@ -45,11 +45,11 @@ WORDING = {
                      ("ON MOVING", "accent", True), ("OBJECTS", "accent", False)],
            "title_fonts": TITLE_FONT_FILES, "line_height": 0.98,
            "tag": "KINECT  +  PROJECTOR", "below": "the geometry, explained", "below_fonts": TEXT_FONT_FILES,
-           "suffix": ""},
+           "credit": "Richard Qian Li 陈腐粉碎机  ·  ITP, NYU", "suffix": ""},
     "zh": {"title": [("移动物体上的", "accent", True), ("投影映射", "white", False)],
            "title_fonts": CREDIT_FONT_FILES, "line_height": 1.22,
            "tag": "KINECT  +  PROJECTOR", "below": "几何原理讲解  ·  Projection Mapping on Moving Objects",
-           "below_fonts": CREDIT_FONT_FILES, "suffix": "_zh"},
+           "below_fonts": CREDIT_FONT_FILES, "credit": "Richard Qian Li 陈腐粉碎机", "suffix": "_zh"},
 }
 
 
@@ -284,7 +284,7 @@ def make_cover(frame, landmarks, edges, orientation, wording):
     below_font = fitted_font(wording["below_fonts"], wording["below"], text_width, int(title_size * 0.30))
     draw.text((text_left, bar_top + int(used_size * 0.22)), wording["below"], font=below_font, fill=WHITE + (255,))
     credit_font = font(CREDIT_FONT_FILES, int(title_size * 0.19))
-    draw.text((text_left, height - int(title_size * 0.46)), "Richard Qian Li 陈腐粉碎机  ·  ITP, NYU", font=credit_font,
+    draw.text((text_left, height - int(title_size * 0.46)), wording["credit"], font=credit_font,
               fill=(200, 206, 222, 255))
     return image.convert("RGB")
 

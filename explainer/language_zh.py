@@ -149,8 +149,33 @@ NARRATION = [
      "从相机的像素，到房间里的点，再到投影仪的像素，最后回到脸上。"),
 ]
 
-# Names that the Chinese voice reads badly: they are spoken by the same voice in its English mode.
-ENGLISH_NAMES = ["Kinect", "Optoma", "MediaPipe", "Blender"]
+# The voice reads an English name differently every time, and sometimes wrongly. Every
+# clause of the script that holds such a name is therefore spoken whole, several times
+# (sentence_takes.py), and one take is chosen by ear. Each entry: (identifier, section,
+# the clause exactly as it stands in NARRATION).
+NAME_CLAUSES = [
+    ("title_kinect", "title", "一台 Kinect 深度相机负责看，"),
+    ("title_optoma", "title", "一台小型的 Optoma 投影仪负责画。"),
+    ("equipment_kinect", "equipment", "Kinect 里面有两个镜头。"),
+    ("equipment_optoma", "equipment", "投影仪是一台小型的 Optoma，分辨率也是 1920 乘 1080，当作电脑的第二块屏幕来用。"),
+    ("face_mediapipe", "face", "相机每拍一帧，MediaPipe 这个人脸识别模型，就在脸上找出 468 个特征点，"),
+    ("texture_blender", "texture", "在 Blender 里，把颜色画在网格上，颜色实际上就落在这张正方形的图里。"),
+    ("loop_mediapipe", "loop", "MediaPipe 找出特征点，这就是要追踪的目标。"),
+]
+
+# The take chosen for each clause: identifier -> take number. A clause without a choice uses take 1.
+def _chosen_takes():
+    """The takes chosen by ear, saved by takes_page.py; empty until a choice was made."""
+    import json
+    import os
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "name_readings", "chosen_takes.json")
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as file:
+        return {identifier: int(take) for identifier, take in json.load(file).items()}
+
+
+CHOSEN_TAKES = _chosen_takes()
 
 CUES = {
     "title": {"A Kinect depth camera": "一台 Kinect 深度相机", "A small Optoma": "一台小型的 Optoma",
@@ -321,7 +346,7 @@ TEXTS = {
     "near dots pin the focal length": "近处的点确定焦距",
     # face
     "The moving target: the face": "移动的目标：脸",
-    "MediaPipe: 468 landmarks (x′, y′)": "MediaPipe：468 个特征点 landmarks (x′, y′)",
+    "MediaPipe: 468 landmarks (x′, y′)": "MediaPipe：468 个特征点 (x′, y′)",
     "as the camera\nsees it": "相机\n看到的",
     "as the projector\nmust draw it": "投影仪\n应该画的",
     "projector\nmodel": "投影仪\n模型",

@@ -30,3 +30,11 @@ explainer/covers/*.png
 explainer/*.before_language.py
 explainer/*_backup.srt
 explainer/*_narration_only.srt
+
+# Explainer: candidate readings of names, to choose from by ear
+explainer/name_readings/*_[0-9][0-9].wav
+
+# Explainer: working copies made while splicing
+explainer/*_copy.srt
+explainer/splice_times.txt
+explainer/name_readings/*.wav

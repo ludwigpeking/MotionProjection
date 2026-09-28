@@ -82,54 +82,75 @@ def time_lines_by_spoken_words(lines, spoken_lines, word_timings, clip_seconds):
     return timed
 
 
-def with_english_names(samples, word_timings, names, english_reading_of, sample_rate):
-    """Replaces, in a Chinese reading, every listed English name by the same voice's English
-    reading of it. The name's place is taken from the word timings: from the end of the
-    word before it to the start of the word after it (the timing of the name itself is
-    unreliable). Returns the new samples and the word timings moved to match."""
-    if not names:
-        return samples, word_timings, []
-    level = speak_doubao.loudness(samples)
-    output = []
-    moved_timings = []
-    cursor = 0
-    shift_seconds = 0.0
-    replaced = []
-    for index, word in enumerate(word_timings):
-        written = word.get("word", "")
-        name = next((name for name in names if name.lower() in written.lower()), None)
-        moved = dict(word)
-        if name is None:
-            moved["startTime"] = float(word["startTime"]) + shift_seconds
-            moved["endTime"] = float(word["endTime"]) + shift_seconds
-            moved_timings.append(moved)
+TAKES_DIRECTORY = "name_readings"
+PAUSE_SECONDS_AFTER = {"，": 0.22, "、": 0.15, "：": 0.25, "；": 0.3, "。": 0.45, "？": 0.45, "！": 0.45}
+
+
+def take_paths(identifier, take_number):
+    stem = os.path.join(TAKES_DIRECTORY, f"{identifier}_take_{take_number:02d}")
+    return stem + ".wav", stem + ".json"
+
+
+def trimmed_with_timings(samples, word_timings, sample_rate):
+    """The samples without the silence at both ends, and the word timings moved to match."""
+    loud = [index for index, sample in enumerate(samples) if abs(sample) > speak_doubao.SILENCE_THRESHOLD]
+    if not loud:
+        return [], []
+    edge = int(0.03 * sample_rate)
+    first = max(0, loud[0] - edge)
+    last = min(len(samples), loud[-1] + edge)
+    shift = first / float(sample_rate)
+    moved = [dict(word, startTime=float(word["startTime"]) - shift, endTime=float(word["endTime"]) - shift)
+             for word in word_timings]
+    return samples[first:last], moved
+
+
+def assembled_section(key, text, request_parameters, headers):
+    """A section whose name clauses come from chosen takes: the text is cut at those clauses,
+    the pieces in between are spoken as usual, and everything is joined with the pauses the
+    punctuation asks for. Returns (16-bit PCM bytes, word timings of the whole section)."""
+    sample_rate = speak_doubao.SAMPLE_RATE_HERTZ
+    pieces = []                                         # (text, identifier or None)
+    rest = text
+    for identifier, section, clause in language_zh.NAME_CLAUSES:
+        if section != key:
             continue
-        start_seconds = float(word_timings[index - 1]["endTime"]) if index > 0 else float(word["startTime"])
-        end_seconds = (float(word_timings[index + 1]["startTime"]) if index + 1 < len(word_timings)
-                       else float(word["endTime"]))
-        start = max(cursor, int(start_seconds * sample_rate))
-        end = max(start, int(end_seconds * sample_rate))
-        reading = english_reading_of(name)
-        if not reading:
-            moved["startTime"] = float(word["startTime"]) + shift_seconds
-            moved["endTime"] = float(word["endTime"]) + shift_seconds
-            moved_timings.append(moved)
-            continue
-        reading_level = speak_doubao.loudness(reading)
-        gain = level / reading_level if level and reading_level else 1.0
-        reading = [max(-32768, min(32767, int(sample * gain))) for sample in reading]
-        pad = speak_doubao.silence(0.05)
-        piece_before = samples[cursor:start]
-        output += speak_doubao.faded(piece_before) if piece_before else []
-        moved["startTime"] = len(output) / float(sample_rate) + 0.05
-        output += pad + speak_doubao.faded(reading) + pad
-        moved["endTime"] = len(output) / float(sample_rate) - 0.05
-        moved_timings.append(moved)
-        cursor = end
-        shift_seconds = len(output) / float(sample_rate) - end_seconds
-        replaced.append(name)
-    output += samples[cursor:]
-    return output, moved_timings, replaced
+        position = rest.find(clause)
+        if position < 0:
+            raise SystemExit(f"the clause of '{identifier}' is not in the narration of '{key}': {clause}")
+        if rest[:position].strip():
+            pieces.append((rest[:position], None))
+        pieces.append((clause, identifier))
+        rest = rest[position + len(clause):]
+    if rest.strip():
+        pieces.append((rest, None))
+
+    samples = []
+    word_timings = []
+    for piece_text, identifier in pieces:
+        if identifier is None:
+            audio = asyncio.run(speak_doubao.synthesize(piece_text, request_parameters, headers))
+            piece_samples = speak_doubao.samples_of(audio)
+            piece_timings = list(speak_doubao.LAST_WORD_TIMINGS)
+        else:
+            take_number = language_zh.CHOSEN_TAKES.get(identifier, 1)
+            wave_path, timings_path = take_paths(identifier, take_number)
+            if not os.path.exists(wave_path):
+                raise SystemExit(f"{wave_path} is missing: run sentence_takes.py first")
+            with wave.open(wave_path) as wave_file:
+                piece_samples = speak_doubao.samples_of(wave_file.readframes(wave_file.getnframes()))
+            with open(timings_path, encoding="utf-8") as file:
+                piece_timings = json.load(file)
+            print(f"  {key}: '{identifier}' from take {take_number}"
+                  f"{'' if identifier in language_zh.CHOSEN_TAKES else ' (no choice made yet)'}", flush=True)
+        piece_samples, piece_timings = trimmed_with_timings(piece_samples, piece_timings, sample_rate)
+        offset = len(samples) / float(sample_rate)
+        samples += speak_doubao.faded(piece_samples)
+        word_timings += [dict(word, startTime=word["startTime"] + offset, endTime=word["endTime"] + offset)
+                         for word in piece_timings]
+        last_mark = piece_text.strip()[-1] if piece_text.strip() else ""
+        samples += speak_doubao.silence(PAUSE_SECONDS_AFTER.get(last_mark, 0.25))
+    return struct.pack(f"<{len(samples)}h", *samples), word_timings
 
 
 def time_lines_by_length(lines, clip_seconds):
@@ -169,31 +190,19 @@ def main():
     sections = {}
     for key, text in narration:
         clip_path = os.path.join(audio_directory, f"{key}.mp3")
-        text_hash = hashlib.sha256(f"doubao|{speaker_identifier}|{SPEECH_RATE}|{text}".encode()).hexdigest()
+        chosen_here = sorted((identifier, language_zh.CHOSEN_TAKES.get(identifier, 1))
+                             for identifier, section, _ in language_zh.NAME_CLAUSES if chinese and section == key)
+        text_hash = hashlib.sha256(f"doubao|{speaker_identifier}|{SPEECH_RATE}|{text}|{chosen_here}".encode()).hexdigest()
         kept = previous.get(key)
         if not arguments.force and kept and kept.get("text_hash") == text_hash and os.path.exists(clip_path):
             sections[key] = kept
         else:
             spoken_text = text if chinese else speak_doubao.english_reading(text)
-            audio = asyncio.run(speak_doubao.synthesize(spoken_text, request_parameters, headers))
-            word_timings = list(speak_doubao.LAST_WORD_TIMINGS)
-            if chinese:
-                names_here = [name for name in language_zh.ENGLISH_NAMES if name.lower() in text.lower()]
-
-                def english_reading_of(name):
-                    if name not in english_readings:
-                        name_audio = asyncio.run(speak_doubao.synthesize(name, english_parameters, headers))
-                        english_readings[name] = speak_doubao.trimmed(speak_doubao.samples_of(name_audio))
-                    return english_readings[name]
-
-                samples, word_timings, replaced = with_english_names(
-                    speak_doubao.samples_of(audio), word_timings, names_here, english_reading_of,
-                    speak_doubao.SAMPLE_RATE_HERTZ)
-                audio = struct.pack(f"<{len(samples)}h", *samples)
-                missed = [name for name in names_here if name not in replaced]
-                if replaced or missed:
-                    print(f"  {key}: spoken in English: {', '.join(replaced) or 'none'}"
-                          + (f"; NOT found in the word timings: {', '.join(missed)}" if missed else ""), flush=True)
+            if not (chinese and any(section == key for _, section, _ in language_zh.NAME_CLAUSES)):
+                audio = asyncio.run(speak_doubao.synthesize(spoken_text, request_parameters, headers))
+                word_timings = list(speak_doubao.LAST_WORD_TIMINGS)
+            if chinese and any(section == key for _, section, _ in language_zh.NAME_CLAUSES):
+                audio, word_timings = assembled_section(key, text, request_parameters, headers)
             wave_path = os.path.join(audio_directory, f"{key}.wav")
             speak_doubao.write_wave(wave_path, audio)
             with wave.open(wave_path) as wave_file:

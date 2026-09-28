@@ -1,0 +1,9 @@
+{
+ "title_kinect": 4,
+ "title_optoma": 4,
+ "equipment_kinect": 6,
+ "equipment_optoma": 1,
+ "face_mediapipe": 4,
+ "texture_blender": 1,
+ "loop_mediapipe": 3
+}

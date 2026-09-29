@@ -9,8 +9,18 @@ colour pixel, the projector modelled as a camera, the coded-dot calibration and 
 it solves, why the focal length matters, the face mesh, how the painted texture is
 mapped onto it, where the error comes from, and the feedback loop around the moving face.
 
-Output: `system_explainer.mp4` (1280x720, 30 fps, about 9 minutes) and
-`system_explainer.srt` (the same subtitles as a separate file).
+Output: the finished films are in `final/`, with their subtitles and covers.
+
+## Folders
+
+| folder | what is in it |
+|---|---|
+| `final/` | the finished films, English and Chinese, with their subtitles and covers. Nothing else. |
+| `working/masters/` | the films without intro and music, which every new mix starts from |
+| `working/leftovers/` | intermediate files of past edits; safe to delete |
+| `covers/`, `images/`, `clips/` | pictures and clips the films are built from |
+| `audio/`, `audio_zh/`, `name_readings/` | generated narration, and the takes to choose from |
+| `media/` | Manim's render output |
 
 ## Notation
 
